@@ -19,7 +19,7 @@ void rotate_x(double angle, vertex_t *v) {
     double y1 = v->y;
     double z1 = v->z;
     v->y = y1 * cos(angle) - z1 * sin(angle);
-    v->z = z1 * sin(angle) + z1 * cos(angle);
+    v->z = y1 * sin(angle) + z1 * cos(angle);
 }
 
 // rotate_y : rotate the vertex coordinate by angle in the y direction
