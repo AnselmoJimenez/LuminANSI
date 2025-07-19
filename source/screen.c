@@ -38,7 +38,7 @@ int init_window(const int height, const int width) {
     
     for (int i = 0; i < window.height * window.width; i++) {
         window.pixels[i] = malloc(PATTERNSIZE * sizeof(char));  // Space + null terminator
-        strcpy(window.pixels[i], pattern[1]);
+        strcpy(window.pixels[i], pattern[0]);
     }
 
     return 0;
@@ -51,18 +51,34 @@ void destroy_window(void) {
     free(window.pixels);
 }
 
+#define HIDE_CURSOR     "\x1B\x5B\x3F\x32\x35\x6C"
+#define SHOW_CURSOR     "\x1B\x5B\x3F\x32\x35\x68"
+
 // draw_window : draw the buffer of characters
-int draw_window(void) {
+void draw_window(void) {
+    printf(HIDE_CURSOR);
     for (int i = 0; i < window.height * window.width; i++) {
         if (i % window.width == 0 && i != 0) printf("\n");
         printf("%s", window.pixels[i]);
     }
     printf("\n");
+    printf(SHOW_CURSOR);
+}
+
+#define CURSOR_HOME     "\x1B\x5B\x48"
+#define CLEAR_SCREEN    "\x1B\x5B\x32\x4A"
+
+// clear_window : reset the window pixels
+void clear_window(void) {
+    for (int i = 0; i < window.height * window.width; i++)
+        strcpy(window.pixels[i], pattern[0]);
+    printf(CURSOR_HOME);
+    printf(CLEAR_SCREEN);
 }
 
 // plot : put vertex in pixels buffer
 void plot(vertex_t v) {
-    double d = 1; // distance of image plane (screen)
+    double d = window.width / 2; // distance of image plane (screen)
 
     // projected coordinated on a the image plane
     double projx = (v.x * d) / v.z;
@@ -74,6 +90,6 @@ void plot(vertex_t v) {
 
     // array index
     int index = (window.width * (int) pxy) + (int) pxx;
-    if (index >= 0 && index < window.height * window.width) // quick bounds check
+    if (index > -1 && index < window.height * window.width) // quick bounds check
         strcpy(window.pixels[index], v.pattern);
 }
