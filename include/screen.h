@@ -12,3 +12,6 @@ void clear_window(void);
 
 // plot : put vertex in screen buffer
 void plot(vertex_t);
+
+// connect : draw a line between vertices (Bresenham's Line Algorithm)
+void connect(vertex_t v0, vertex_t v1);
