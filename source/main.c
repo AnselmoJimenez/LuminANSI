@@ -15,22 +15,21 @@ int main(int argc, char const *argv[]) {
     if (init_window(height, width) != 0)
         return 1;
 
+    vertex_t center = new_vertex(0, 0, 11);
     *vp++ = new_vertex( 1,  1, 10);
     *vp++ = new_vertex(-1, -1, 10);
     *vp++ = new_vertex( 1, -1, 10);
     *vp++ = new_vertex(-1,  1, 10);
-    for (int i = 0; i < 4; i++)
-        plot(vertices[i]);
-    draw_window();
+    *vp++ = new_vertex( 1,  1, 12);
+    *vp++ = new_vertex(-1, -1, 12);
+    *vp++ = new_vertex( 1, -1, 12);
+    *vp++ = new_vertex(-1,  1, 12);
+    
+    plot(vertices[0]);
+    plot(vertices[1]);
 
-    for (int timer = 0; timer < 50; timer++) {
-        clear_window();
-        for (int i = 0; i < 4; i++) {
-            rotate_z(1, &vertices[i]);
-            plot(vertices[i]);
-        }
-        draw_window();
-    }
+    connect(vertices[0], vertices[1]);
+    draw_window();
 
     destroy_window();
     return 0;
