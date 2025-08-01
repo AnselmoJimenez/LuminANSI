@@ -96,43 +96,34 @@ void plot(vertex_t v) {
         strcpy(window.pixels[index], v.pattern);
 }
 
-// connect : draw a line between vertices (Bresenham's Line Algorithm)
+// connect : draw a line between vertices (DDA Line Algorithm)
 void connect(vertex_t v0, vertex_t v1) {
-    // projected coordinated on a the image plane
-    double projx0 = (v0.x * focal_length) / v0.z;
-    double projy0 = (v0.y * focal_length) / v0.z;
-    double projx1 = (v1.x * focal_length) / v1.z;
-    double projy1 = (v1.y * focal_length) / v1.z;
+    // convert both vertexes into pixel coordinates
+    int pxx0 = (window.width / 2) + (v0.x * focal_length) / v0.z;
+    int pxy0 = (window.height / 2) + (v0.y * focal_length) / v0.z;
+    int pxx1 = (window.width / 2) + (v1.x * focal_length) / v1.z;
+    int pxy1 = (window.height / 2) + (v1.y * focal_length) / v1.z;
+    printf("(pxx0, pxy0) = (%d, %d) - (pxx1, pxy1) = (%d, %d)\n", pxx0, pxy0, pxx1, pxy1);
 
-    // convert to pixel coordinates
-    double pxx0 = (window.width / 2) + projx0;
-    double pxy0 = (window.height / 2) + projy0;
-    double pxx1 = (window.width / 2) + projx1;
-    double pxy1 = (window.height / 2) + projy1;
+    int dx = pxx1 - pxx0;
+    int dy = pxy1 - pxy0;
 
-    // calculate differences
-    double dx = abs(pxx1 - pxx0);
-    double dy = abs(pxx1 - pxy0);
+    // steps required for generating pixels
+    int steps = abs(dx) > abs(dy) ? abs(dx) : abs(dy);
 
-    // Determine direction
-    int sx = (pxx0 < pxx1) ? 1 : -1;
-    int sy = (pxy0 < pxy1) ? 1 : -1;
+    // calculate increment in x and y for each steps
+    float xincrement = dx / (float) steps;
+    float yincrement = dy / (float) steps;
 
-    double err = dx - dy;
-    double x = pxx0, y = pxy0;
-
-    while (1) {
-        // Set pixel at (x, y)
-        if (x > -1 && x < window.width && y > -1 && y < window.height) {
-            int index = (window.width * y) + x;
+    // put pixels for each step
+    float x = pxx0;
+    float y = pxy0;
+    for (int i = 0; i <= steps; i++) {
+        int index = (window.width * y) + x;
+        if (index > -1 && index < window.height * window.width && strcmp(window.pixels[index], pattern[9]) != 0) // quick bounds check
             strcpy(window.pixels[index], pattern[8]);
-        }
         
-        if (x == (int) pxx1 && y == (int) pxy1) 
-            break;
-        
-        double e2 = 2 * err;
-        if (e2 > -dy) { err -= dy; x += sx; }
-        if (e2 < dx)  { err += dx; y += sy; }
+        x += xincrement;
+        y += yincrement;
     }
 }
