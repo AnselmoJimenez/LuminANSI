@@ -5,7 +5,7 @@
 
 #define MAXVERTICES 50
 
-vertex_t vertices[MAXVERTICES] = {0};
+vertex_t vertices[MAXVERTICES];
 vertex_t *vp = vertices;
 
 int main(int argc, char const *argv[]) {
@@ -20,16 +20,26 @@ int main(int argc, char const *argv[]) {
     *vp++ = new_vertex(-1, -1, 10);
     *vp++ = new_vertex( 1, -1, 10);
     *vp++ = new_vertex(-1,  1, 10);
-    *vp++ = new_vertex( 1,  1, 12);
-    *vp++ = new_vertex(-1, -1, 12);
-    *vp++ = new_vertex( 1, -1, 12);
-    *vp++ = new_vertex(-1,  1, 12);
+    // *vp++ = new_vertex( 1,  1, 12);
+    // *vp++ = new_vertex(-1, -1, 12);
+    // *vp++ = new_vertex( 1, -1, 12);
+    // *vp++ = new_vertex(-1,  1, 12);
     
-    plot(vertices[0]);
-    plot(vertices[1]);
+    for (int i = 0; i < 4; i++)
+        plot(vertices[i]);
 
-    connect(vertices[0], vertices[1]);
-    draw_window();
+    for (int count = 0; count < 2000; count++) {
+        clear_window();
+        for (int i = 0; i < 4; i++) {
+            rotate_y(0.0025, &vertices[i], center);
+        }
+        connect(vertices[1], vertices[2]);
+        connect(vertices[2], vertices[3]);
+        connect(vertices[3], vertices[0]);
+        connect(vertices[0], vertices[2]);
+        connect(vertices[1], vertices[3]);
+        draw_window();
+    }
 
     destroy_window();
     return 0;
