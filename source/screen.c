@@ -103,7 +103,6 @@ void connect(vertex_t v0, vertex_t v1) {
     int pxy0 = (window.height / 2) + (v0.y * focal_length) / v0.z;
     int pxx1 = (window.width / 2) + (v1.x * focal_length) / v1.z;
     int pxy1 = (window.height / 2) + (v1.y * focal_length) / v1.z;
-    printf("(pxx0, pxy0) = (%d, %d) - (pxx1, pxy1) = (%d, %d)\n", pxx0, pxy0, pxx1, pxy1);
 
     int dx = pxx1 - pxx0;
     int dy = pxy1 - pxy0;
@@ -119,10 +118,16 @@ void connect(vertex_t v0, vertex_t v1) {
     float x = pxx0;
     float y = pxy0;
     for (int i = 0; i <= steps; i++) {
-        int index = (window.width * y) + x;
-        if (index > -1 && index < window.height * window.width && strcmp(window.pixels[index], pattern[9]) != 0) // quick bounds check
-            strcpy(window.pixels[index], pattern[8]);
-        
+        int px = (int) x;
+        int py = (int) y;
+    
+        // Bounds check before calculating index
+        if (px >= 0 && px < window.width && py >= 0 && py < window.height) {
+            int index = (window.width * py) + px;
+            if (strcmp(window.pixels[index], pattern[9]) != 0) {
+                strcpy(window.pixels[index], pattern[8]);
+            }
+        }
         x += xincrement;
         y += yincrement;
     }
