@@ -10,7 +10,6 @@ vertex_t new_vertex(double x, double y, double z) {
         .x = x,
         .y = y,
         .z = z,
-        .pattern = "\xe2\x96\x88"   // █
     };
 
     return v;

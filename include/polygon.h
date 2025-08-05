@@ -2,7 +2,6 @@ typedef struct {
     double x;
     double y;
     double z;
-    char *pattern;
 } vertex_t;
 
 // new_vertex : create and return a new vertex object
