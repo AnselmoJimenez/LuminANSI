@@ -88,7 +88,7 @@ void plot(vertex_t v) {
 
     // convert to pixel coordinates
     double pxx = (window.width / 2) + projx;
-    double pxy = (window.height / 2) + projy;
+    double pxy = (window.height / 2) - projy;
 
     // array index
     int index = (window.width * (int) pxy) + (int) pxx;
@@ -100,9 +100,9 @@ void plot(vertex_t v) {
 void connect(vertex_t v0, vertex_t v1) {
     // convert both vertexes into pixel coordinates
     int pxx0 = (window.width / 2) + (v0.x * focal_length) / v0.z;
-    int pxy0 = (window.height / 2) + (v0.y * focal_length) / v0.z;
+    int pxy0 = (window.height / 2) - (v0.y * focal_length) / v0.z;
     int pxx1 = (window.width / 2) + (v1.x * focal_length) / v1.z;
-    int pxy1 = (window.height / 2) + (v1.y * focal_length) / v1.z;
+    int pxy1 = (window.height / 2) - (v1.y * focal_length) / v1.z;
 
     int dx = pxx1 - pxx0;
     int dy = pxy1 - pxy0;
@@ -124,9 +124,8 @@ void connect(vertex_t v0, vertex_t v1) {
         // Bounds check before calculating index
         if (px >= 0 && px < window.width && py >= 0 && py < window.height) {
             int index = (window.width * py) + px;
-            if (strcmp(window.pixels[index], pattern[9]) != 0) {
+            if (strcmp(window.pixels[index], pattern[0]) == 0)
                 strcpy(window.pixels[index], pattern[8]);
-            }
         }
         x += xincrement;
         y += yincrement;
