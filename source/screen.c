@@ -93,7 +93,7 @@ void plot(vertex_t v) {
     // array index
     int index = (window.width * (int) pxy) + (int) pxx;
     if (index > -1 && index < window.height * window.width) // quick bounds check
-        strcpy(window.pixels[index], v.pattern);
+        strcpy(window.pixels[index], pattern[9]);
 }
 
 // connect : draw a line between vertices (DDA Line Algorithm)
