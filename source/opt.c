@@ -2,52 +2,52 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "../include/opt.h"
+
 // valid : returns 0 or 1 if character is in string
-int valid(char c, char *str) {
+int valid(char c, const char *str) {
     for (*str; *str != '\0'; str++)
-        if (*str == c) return 0;
-    return 1;
+        if (*str == c) return 1;
+    return 0;
 }
 
 // continuous : returns 0 or 1 if character has a : after in str
-int continuous(char c, char *str) {
+int continuous(char c, const char *str) {
     for (*str; *str != '\0' && *str != c; str++)
         ;
-    if (*str == '\0') return 1;
-    if (*++str == ':') return 0;
-    else return 1;
+    if (*str == '\0') return 0;
+    if (*++str == ':') return 1;
+    else return 0;
 }
 
 #define MAXSTRING   25
 
-char *optarg;
-int optind;
+char *optarg = NULL;
+int optind = 1;
 int opterr = 1;
-char opterrc;
+char opterrc = 0;
 
 // getopt : returns current option or -1 if none left
 int getopt(int argc, const char **argv, const char *argoptions) {
-    optarg = 0;
-    optind = 1;
+    optarg = NULL;
 
     char option = 0;
     while (argv[optind]) {
-        option = *(argv + optind)[0] == '-' ? *(argv + optind)[1] : 0;
+        option = (*(argv + optind))[0] == '-' ? (*(argv + optind))[1] : 0;
 
         // Check if valid option
         if (!valid(option, argoptions)) {
             opterrc = option;
-            if (!opterr) printf("getopt: error: invalid option -%c\n", opterrc);
+            if (opterr) printf("getopt: error: invalid option -%c\n", opterrc);
             return -1;
         }
 
         // Check for option argument
-        if (continuous(option, argoptions)) {
-            optarg = (char) malloc(MAXSTRING * sizeof(char));
-            strcpy(optarg, argv[++optind]);
-        }
+        if (continuous(option, argoptions)) optarg = (char *) argv[++optind];
 
         ++optind;
         return option;
     }
+
+    return -1;
 }
