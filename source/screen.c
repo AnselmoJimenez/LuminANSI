@@ -53,6 +53,11 @@ void enable_raw_mode(void) {
 
 double focal_length;
 
+#define CURSOR_HOME     "\x1B\x5B\x48"
+#define CLEAR_SCREEN    "\x1B\x5B\x32\x4A"
+#define HIDE_CURSOR     "\x1B\x5B\x3F\x32\x35\x6C"
+#define SHOW_CURSOR     "\x1B\x5B\x3F\x32\x35\x68"
+
 // init_window : initialize a window of size height and width
 int init_window(const int height, const int width) {
     enable_raw_mode();
@@ -69,6 +74,8 @@ int init_window(const int height, const int width) {
     }
 
     focal_length = window.width / 2;
+    printf(CLEAR_SCREEN);
+    printf(HIDE_CURSOR);
 
     return 0;
 }
@@ -80,14 +87,11 @@ void destroy_window(void) {
     free(window.pixels);
 
     disable_raw_mode();
+    printf(SHOW_CURSOR);
 }
-
-#define CURSOR_HOME     "\x1B\x5B\x48"
-#define HIDE_CURSOR     "\x1B\x5B\x3F\x32\x35\x6C"
 
 // draw_window : draw the buffer of characters
 void draw_window(void) {
-    printf(HIDE_CURSOR);
     for (int i = 0; i < window.height * window.width; i++) {
         if (i % window.width == 0 && i != 0) printf("\n");
         printf("%s", window.pixels[i]);
