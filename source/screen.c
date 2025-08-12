@@ -106,11 +106,13 @@ void clear_window(void) {
     printf(CURSOR_HOME);
 }
 
+#define CAMERA_Z -10
+
 // plot : put vertex in pixels buffer
 void plot(vertex_t v) {
     // projected coordinated on a the image plane
-    double projx = (v.x * focal_length) / v.z;
-    double projy = (v.y * focal_length) / v.z;
+    double projx = (v.x * focal_length) / (v.z - CAMERA_Z);
+    double projy = (v.y * focal_length) / (v.z - CAMERA_Z);
 
     // convert to pixel coordinates
     double pxx = (window.width / 2) + projx;
@@ -125,10 +127,10 @@ void plot(vertex_t v) {
 // connect : draw a line between vertices (DDA Line Algorithm)
 void connect(vertex_t v0, vertex_t v1) {
     // convert both vertexes into pixel coordinates
-    int pxx0 = (window.width / 2) + (v0.x * focal_length) / v0.z;
-    int pxy0 = (window.height / 2) - (v0.y * focal_length) / v0.z;
-    int pxx1 = (window.width / 2) + (v1.x * focal_length) / v1.z;
-    int pxy1 = (window.height / 2) - (v1.y * focal_length) / v1.z;
+    int pxx0 = (window.width / 2)  + (v0.x * focal_length) / (v0.z - CAMERA_Z);
+    int pxy0 = (window.height / 2) - (v0.y * focal_length) / (v0.z - CAMERA_Z);
+    int pxx1 = (window.width / 2)  + (v1.x * focal_length) / (v1.z - CAMERA_Z);
+    int pxy1 = (window.height / 2) - (v1.y * focal_length) / (v1.z - CAMERA_Z);
 
     int dx = pxx1 - pxx0;
     int dy = pxy1 - pxy0;

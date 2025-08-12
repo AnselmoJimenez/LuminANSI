@@ -16,25 +16,26 @@ int main(int argc, char const *argv[]) {
     if (init_window(height, width) != 0)
         return 1;
 
-    vertex_t center = new_vertex(0, 0, 11);
-    vertices[0] = new_vertex( 1,  1, 10);
-    vertices[1] = new_vertex(-1, -1, 10);
-    vertices[2] = new_vertex( 1, -1, 10);
-    vertices[3] = new_vertex(-1,  1, 10);
-    vertices[4] = new_vertex( 1,  1, 12);
-    vertices[5] = new_vertex(-1, -1, 12);
-    vertices[6] = new_vertex( 1, -1, 12);
-    vertices[7] = new_vertex(-1,  1, 12);
+    vertex_t center = new_vertex(0, 0, 0);
+    vertices[0] = new_vertex( 1,  1, 1);
+    vertices[1] = new_vertex(-1, -1, 1);
+    vertices[2] = new_vertex( 1, -1, 1);
+    vertices[3] = new_vertex(-1,  1, 1);
+    vertices[4] = new_vertex( 1,  1, -1);
+    vertices[5] = new_vertex(-1, -1, -1);
+    vertices[6] = new_vertex( 1, -1, -1);
+    vertices[7] = new_vertex(-1,  1, -1);
 
-    for (int count = 0; count < 4000; count++) {
+    for (int count = 0; count < 2000; count++) {
         clear_window();
 
         rotation_angle += 0.005;
 
         for (int i = 0; i < 8; i++) {
             transforms[i] = vertices[i];
-            rotate_y(rotation_angle, &transforms[i], center);
-            rotate_x(rotation_angle, &transforms[i], center);
+            rotate_y(rotation_angle, &transforms[i]);
+            rotate_x(rotation_angle, &transforms[i]);
+            rotate_z(rotation_angle, &transforms[i]);
             plot(transforms[i]);
         }
         connect(transforms[0], transforms[2]);
