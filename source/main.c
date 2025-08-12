@@ -29,7 +29,7 @@ int main(int argc, char const *argv[]) {
     for (int count = 0; count < 4000; count++) {
         clear_window();
 
-        rotation_angle += 0.0025;
+        rotation_angle += 0.005;
 
         for (int i = 0; i < 8; i++) {
             transforms[i] = vertices[i];

@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <termios.h>
 #include <math.h>
 
 #include "../include/polygon.h"
@@ -34,10 +35,10 @@ const char *pattern[] = {
 struct termios original_state;
 
 // disable_raw_mode : restore original terminal settings
-void disable_raw_mode() { tcsetattr(STDIN_FILENO, TCSAFLUSH, &original_state); }
+void disable_raw_mode(void) { tcsetattr(STDIN_FILENO, TCSAFLUSH, &original_state); }
 
 // enable_raw_mode : sets the terminal into raw mode
-void enable_raw_mode(struct termios) {
+void enable_raw_mode(void) {
     tcgetattr(STDIN_FILENO, &original_state);   // Current terminal settings
     atexit(disable_raw_mode);   // Register cleanup function to restore settings on exit
 
@@ -54,6 +55,8 @@ double focal_length;
 
 // init_window : initialize a window of size height and width
 int init_window(const int height, const int width) {
+    enable_raw_mode();
+
     window.height = height;
     window.width = width;
     window.pixels = malloc((window.height * window.width) * sizeof(char *));
@@ -75,10 +78,12 @@ void destroy_window(void) {
     for (int i = 0; i < window.height * window.width; i++)
         free(window.pixels[i]);
     free(window.pixels);
+
+    disable_raw_mode();
 }
 
+#define CURSOR_HOME     "\x1B\x5B\x48"
 #define HIDE_CURSOR     "\x1B\x5B\x3F\x32\x35\x6C"
-#define SHOW_CURSOR     "\x1B\x5B\x3F\x32\x35\x68"
 
 // draw_window : draw the buffer of characters
 void draw_window(void) {
@@ -88,18 +93,13 @@ void draw_window(void) {
         printf("%s", window.pixels[i]);
     }
     printf("\n");
-    printf(SHOW_CURSOR);
 }
-
-#define CURSOR_HOME     "\x1B\x5B\x48"
-#define CLEAR_SCREEN    "\x1B\x5B\x32\x4A"
 
 // clear_window : reset the window pixels
 void clear_window(void) {
     for (int i = 0; i < window.height * window.width; i++)
         strcpy(window.pixels[i], pattern[0]);
     printf(CURSOR_HOME);
-    printf(CLEAR_SCREEN);
 }
 
 // plot : put vertex in pixels buffer
