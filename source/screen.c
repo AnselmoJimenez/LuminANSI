@@ -28,6 +28,28 @@ const char *pattern[] = {
     "\xe2\x96\x88"   // █
 };
 
+#define STDIN_FILENO    0   // standard input
+#define STDOUT_FILENO   1   // standard output
+#define STDERR_FILENO   2   // standard error
+struct termios original_state;
+
+// disable_raw_mode : restore original terminal settings
+void disable_raw_mode() { tcsetattr(STDIN_FILENO, TCSAFLUSH, &original_state); }
+
+// enable_raw_mode : sets the terminal into raw mode
+void enable_raw_mode(struct termios) {
+    tcgetattr(STDIN_FILENO, &original_state);   // Current terminal settings
+    atexit(disable_raw_mode);   // Register cleanup function to restore settings on exit
+
+    struct termios new_state = original_state;
+    new_state.c_lflag &= ~(ICANON | ECHO | ISIG);  // Disable canonical mode, echo, and signals
+    new_state.c_cc[VMIN]  = 0;  // Minimum characters to return - Don't wait
+    new_state.c_cc[VTIME] = 0;  // No timeout
+
+    // Apply the new settings
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &new_state);
+}
+
 double focal_length;
 
 // init_window : initialize a window of size height and width
