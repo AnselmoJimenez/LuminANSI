@@ -4,7 +4,7 @@
 #include <termios.h>
 #include <math.h>
 
-#include "../include/polygon.h"
+#include "../include/object.h"
 #include "../include/screen.h"
 
 typedef struct {

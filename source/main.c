@@ -3,8 +3,6 @@
 #include "../include/object.h"
 #include "../include/screen.h"
 
-#define MAXVERTICES 50
-
 vertex_t vertices[MAXVERTICES];
 vertex_t transforms[MAXVERTICES];
 
