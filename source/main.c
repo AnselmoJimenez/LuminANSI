@@ -1,6 +1,6 @@
 #include <stdio.h>
 
-#include "../include/polygon.h"
+#include "../include/object.h"
 #include "../include/screen.h"
 
 #define MAXVERTICES 50
