@@ -42,6 +42,15 @@ void rotate_z(double angle, vertex_t *v) {
 object_t obj;
 
 // load : loads the object file name
-void loadobj(char *filename) {
+object_t load(char *filename) {
+    FILE *fp = fopen(filename, "r");
+    /*
+        * scan file and switch case for each letter found
+        * grab object name
+        * populate vertices array
+        * populate normals array
+        * populate faces array - programmatically subdividing the faces
+    */
 
+    fclose(fp);
 }
