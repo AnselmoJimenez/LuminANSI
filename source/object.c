@@ -1,7 +1,7 @@
 #include <stdio.h>
 #include <math.h>
 
-#include "../include/polygon.h"
+#include "../include/object.h"
 #include "../include/screen.h"
 
 // new_vertex : create and return a new vertex object
@@ -37,4 +37,11 @@ void rotate_z(double angle, vertex_t *v) {
     double y1 = v->y;
     v->x = x1 * cos(angle) - y1 * sin(angle);
     v->y = x1 * sin(angle) + y1 * cos(angle);
+}
+
+object_t obj;
+
+// load : loads the object file name
+void loadobj(char *filename) {
+
 }
