@@ -26,13 +26,10 @@ typedef struct face {
 #define MAXVERTICES 1000
 
 typedef struct object {
-    char *name;
     vertex_t vertices[MAXVERTICES];
     vertex_t normals[MAXVERTICES];
     face_t faces[MAXVERTICES];
 } object_t;
 
-extern object_t obj;
-
 // load : loads the object file name
-object_t load(char *filename);
+object_t load(FILE *fp);

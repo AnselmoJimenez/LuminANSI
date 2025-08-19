@@ -39,18 +39,35 @@ void rotate_z(double angle, vertex_t *v) {
     v->y = x1 * sin(angle) + y1 * cos(angle);
 }
 
-object_t obj;
+#define MAXSTRINGLEN 512    
 
 // load : loads the object file name
-object_t load(char *filename) {
-    FILE *fp = fopen(filename, "r");
-    /*
-        * scan file and switch case for each letter found
-        * grab object name
-        * populate vertices array
-        * populate normals array
-        * populate faces array - programmatically subdividing the faces
-    */
+object_t load(FILE *fp) {
+    object_t obj;
+    char cmd;
+    char line[MAXSTRINGLEN] = { '\0' };
+    
+    while (fgets(line, MAXSTRINGLEN, fp) != NULL) {
+        switch (line[0]) {
+            case 'v':   // vertex data
+                switch (line[1]) {
+                    case 'n':   // vertex normals
+                        printf("Vertex normals\n");
+                        break;
+                    case 't':   // vertex textures
+                        printf("Vertex textures\n");
+                        break;
+                    default:    // vertex coordinates
+                        printf("Vertex coordinates\n");
+                        break;
+                }
+                break;
+            case 'f':   // face definition
+                printf("Face defintion\n");
+                break;
+            default: break;
+        }
+    }
 
-    fclose(fp);
+    return obj;
 }
