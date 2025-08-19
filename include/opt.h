@@ -1,5 +1,9 @@
 /* opt.h : My version of getopt */
 
+#define USAGE "usage:\n" \
+"\th : displays this message\n" \
+"\tf [file path] : path to object file\n"
+
 extern char *optarg; // pointer to the option's argument (when option takes an argument)
 extern int optind;   // index of next element in argv to process
 extern int opterr;   // if non-zero, getopt prints error messages (default is 1)
