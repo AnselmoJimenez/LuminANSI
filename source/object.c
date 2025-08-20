@@ -44,26 +44,30 @@ void rotate_z(double angle, vertex_t *v) {
 // load : loads the object file name
 object_t load(FILE *fp) {
     object_t obj;
-    char cmd;
+    vertex_t *vnp = obj.normals;
+    vertex_t *vp = obj.vertices;
     char line[MAXSTRINGLEN] = { '\0' };
-    
     while (fgets(line, MAXSTRINGLEN, fp) != NULL) {
+        double x, y, z;
+
         switch (line[0]) {
             case 'v':   // vertex data
                 switch (line[1]) {
                     case 'n':   // vertex normals
-                        printf("Vertex normals\n");
+                        sscanf(line, "vn %lf %lf %lf\n", &x, &y, &z);
+                        *vnp++ = new_vertex(x, y, z);
                         break;
                     case 't':   // vertex textures
-                        printf("Vertex textures\n");
                         break;
                     default:    // vertex coordinates
-                        printf("Vertex coordinates\n");
+                        sscanf(line, "v %lf %lf %lf\n", &x, &y, &z);
+                        *vp++ = new_vertex(x, y, z);
                         break;
                 }
                 break;
             case 'f':   // face definition
-                printf("Face defintion\n");
+                // printf("Face defintion\n");
+                // programmatically subdivide each face
                 break;
             default: break;
         }
