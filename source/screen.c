@@ -1,11 +1,15 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
 #include <termios.h>
 #include <math.h>
 
 #include "../include/object.h"
 #include "../include/screen.h"
+
+// flag if initialization has occurred
+int init = 0;
 
 typedef struct {
     int height;
@@ -29,9 +33,6 @@ const char *pattern[] = {
     "\xe2\x96\x88"   // █
 };
 
-#define STDIN_FILENO    0   // standard input
-#define STDOUT_FILENO   1   // standard output
-#define STDERR_FILENO   2   // standard error
 struct termios original_state;
 
 // disable_raw_mode : restore original terminal settings
@@ -76,18 +77,29 @@ int init_window(const int height, const int width) {
     focal_length = window.width / 2;
     printf(CLEAR_SCREEN);
     printf(HIDE_CURSOR);
+    init = 1;
 
     return 0;
 }
 
 // destroy_window: free the memory contained in the window
 void destroy_window(void) {
+    if (!init) return;
+
     for (int i = 0; i < window.height * window.width; i++)
         free(window.pixels[i]);
     free(window.pixels);
 
     disable_raw_mode();
     printf(SHOW_CURSOR);
+}
+
+// keypress : returns keypress or -1 if no key was pressed
+int keypress(void) {
+    char c;
+    if (read(STDIN_FILENO, &c, 1) == 1) 
+        return c;
+    return -1;
 }
 
 // draw_window : draw the buffer of characters
@@ -107,6 +119,9 @@ void clear_window(void) {
 }
 
 #define CAMERA_Z -10
+
+/** TODO: Implement scanline algorithm to draw surfaces
+ */
 
 // plot : put vertex in pixels buffer
 void plot(vertex_t v) {

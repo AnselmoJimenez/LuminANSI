@@ -1,4 +1,4 @@
-typedef struct {
+typedef struct vertex{
     double x;
     double y;
     double z;
@@ -23,13 +23,17 @@ typedef struct face {
     int normal_index;
 } face_t;
 
-#define MAXVERTICES 1000
+#define MAXVERTICES 1024
 
 typedef struct object {
     vertex_t vertices[MAXVERTICES];
     vertex_t normals[MAXVERTICES];
-    face_t faces[MAXVERTICES];
+    face_t faces[MAXVERTICES * 2];
 } object_t;
+
+extern int vcount;
+extern int vncount;
+extern int fcount;
 
 // load : loads the object file name
 object_t load(FILE *fp);

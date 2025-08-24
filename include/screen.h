@@ -4,6 +4,9 @@ int init_window(const int height, const int width);
 // destroy_window: free the memory contained in the window
 void destroy_window(void);
 
+// keypress : returns keypress or -1 if no key was pressed
+int keypress(void);
+
 // draw_window : draw the buffer of characters
 void draw_window(void);
 

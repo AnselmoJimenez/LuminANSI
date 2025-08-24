@@ -4,9 +4,23 @@
 #include "../include/screen.h"
 #include "../include/opt.h"
 
+// #define DEBUG
+#ifdef DEBUG
+void print_faces(object_t obj) {
+    for (int i = 0; i < fcount; i++) {
+        printf("face %d -\n\t(x: %lf, y: %lf, z: %lf)\n\t(x: %lf, y: %lf, z: %lf)\n\t(x: %lf, y: %lf, z: %lf)\n", 
+            i, 
+            obj.vertices[obj.faces[i].vertex_index[0] - 1].x, obj.vertices[obj.faces[i].vertex_index[0] - 1].y, obj.vertices[obj.faces[i].vertex_index[0] - 1].z,
+            obj.vertices[obj.faces[i].vertex_index[1] - 1].x, obj.vertices[obj.faces[i].vertex_index[1] - 1].y, obj.vertices[obj.faces[i].vertex_index[1] - 1].z,
+            obj.vertices[obj.faces[i].vertex_index[2] - 1].x, obj.vertices[obj.faces[i].vertex_index[2] - 1].y, obj.vertices[obj.faces[i].vertex_index[2] - 1].z
+        );
+    }
+}
+#endif
+
 int main(int argc, char const *argv[]) {
-    const int height = 64;
-    const int width = 256;
+    const int height = 135;
+    const int width = 612;
     double rotation_angle = 0;
     FILE *fp;
 
@@ -17,8 +31,10 @@ int main(int argc, char const *argv[]) {
                 printf(USAGE);
                 return 1;
             }
-            else if ((fp = fopen(optarg, "r")) == NULL)
+            else if ((fp = fopen(optarg, "r")) == NULL) {
+                printf("asciipoly: Unable to open file '%s'\n", optarg);
                 return 1;
+            }
             break;
         case 'h':
         default:
@@ -32,23 +48,39 @@ int main(int argc, char const *argv[]) {
     object_t obj = load(fp);
     vertex_t transforms[MAXVERTICES];
 
-    for (int count = 0; count < 500; count++) {
+    for (;;) {
+        switch (keypress()) {
+            case 'q':
+                destroy_window();
+                fclose(fp);
+                return 0;
+            default: break;
+        }
+
         clear_window();
 
-        rotation_angle += 0.005;
+        rotation_angle += 0.05;
 
-        for (int i = 0; i < 45; i++) {
+        for (int i = 0; i < vcount; i++) {
             transforms[i] = obj.vertices[i];
             rotate_y(rotation_angle, &transforms[i]);
             rotate_x(rotation_angle, &transforms[i]);
-            rotate_z(rotation_angle, &transforms[i]);
             plot(transforms[i]);
+        }
+
+        // Troubleshoot this
+        for (int i = 0; i < fcount; i++) {
+            connect(transforms[obj.faces[i].vertex_index[0] - 1], transforms[obj.faces[i].vertex_index[1] - 1]);
+            connect(transforms[obj.faces[i].vertex_index[1] - 1], transforms[obj.faces[i].vertex_index[2] - 1]);
+            connect(transforms[obj.faces[i].vertex_index[2] - 1], transforms[obj.faces[i].vertex_index[0] - 1]);
         }
 
         draw_window();
     }
 
+    // will never be reached but just for sanity's sake
     destroy_window();
     fclose(fp);
+
     return 0;
 }

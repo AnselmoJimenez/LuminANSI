@@ -1,4 +1,6 @@
 #include <stdio.h>
+#include <stdlib.h>
+#include <ctype.h>
 #include <math.h>
 
 #include "../include/object.h"
@@ -40,34 +42,66 @@ void rotate_z(double angle, vertex_t *v) {
 }
 
 #define MAXSTRINGLEN 512    
+int vcount = 0;
+int vncount = 0;
+int fcount = 0;
 
 // load : loads the object file name
 object_t load(FILE *fp) {
     object_t obj;
-    vertex_t *vnp = obj.normals;
-    vertex_t *vp = obj.vertices;
     char line[MAXSTRINGLEN] = { '\0' };
+
     while (fgets(line, MAXSTRINGLEN, fp) != NULL) {
         double x, y, z;
-
         switch (line[0]) {
             case 'v':   // vertex data
                 switch (line[1]) {
                     case 'n':   // vertex normals
+                        if (vncount >= MAXVERTICES) break;
                         sscanf(line, "vn %lf %lf %lf\n", &x, &y, &z);
-                        *vnp++ = new_vertex(x, y, z);
+                        obj.normals[vncount++] = new_vertex(x, y, z);
                         break;
                     case 't':   // vertex textures
                         break;
                     default:    // vertex coordinates
+                        if (vcount >= MAXVERTICES) break;
                         sscanf(line, "v %lf %lf %lf\n", &x, &y, &z);
-                        *vp++ = new_vertex(x, y, z);
+                        obj.vertices[vcount++] = new_vertex(x, y, z);
                         break;
                 }
                 break;
             case 'f':   // face definition
-                // printf("Face defintion\n");
-                // programmatically subdivide each face
+                char *lp = &line[2];
+                int subdivrootv = 0;
+                int normal = 0;
+                sscanf(lp, "%d/%*d/%d", &subdivrootv, &normal); // vertex subdivision origin
+                for (lp; *lp != ' ' && *lp != '\n'; lp++)
+                    ;
+                if (*lp == ' ') lp++;
+
+                int last_vertex;
+                sscanf(lp, "%d/%*d/%*d", &last_vertex);
+                for (lp; *lp != ' ' && *lp != '\n'; lp++)
+                    ; // skip to next vertex and begin parsing
+                if (*lp == ' ') lp++;
+
+                while (*lp != '\n' && *lp != '\0') {
+                    face_t new_face;
+                    new_face.vertex_index[0] = subdivrootv;
+                    new_face.vertex_index[1] = last_vertex;
+                    sscanf(lp, "%d/%*d/%*d", &new_face.vertex_index[2]);
+
+                    for (lp; *lp != ' ' && *lp != '\n'; lp++)
+                        ;
+                    
+                    if (*lp == ' ') lp++;
+                    last_vertex = new_face.vertex_index[2];
+
+                    if (fcount < MAXVERTICES * 2) {
+                        obj.faces[fcount] = new_face;
+                        ++fcount;
+                    }
+                }
                 break;
             default: break;
         }
