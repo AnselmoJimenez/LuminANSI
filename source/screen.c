@@ -120,9 +120,6 @@ void clear_window(void) {
 
 #define CAMERA_Z -10
 
-/** TODO: Implement scanline algorithm to draw surfaces
- */
-
 // plot : put vertex in pixels buffer
 void plot(vertex_t v) {
     // projected coordinated on a the image plane
@@ -139,38 +136,48 @@ void plot(vertex_t v) {
         strcpy(window.pixels[index], pattern[9]);
 }
 
-// connect : draw a line between vertices (DDA Line Algorithm)
-void connect(vertex_t v0, vertex_t v1) {
+// bresenham : Draw a line between vertices
+void bresenham(vertex_t v0, vertex_t v1) {
     // convert both vertexes into pixel coordinates
     int pxx0 = (window.width / 2)  + (v0.x * focal_length) / (v0.z - CAMERA_Z);
     int pxy0 = (window.height / 2) - (v0.y * focal_length) / (v0.z - CAMERA_Z);
     int pxx1 = (window.width / 2)  + (v1.x * focal_length) / (v1.z - CAMERA_Z);
     int pxy1 = (window.height / 2) - (v1.y * focal_length) / (v1.z - CAMERA_Z);
 
-    int dx = pxx1 - pxx0;
-    int dy = pxy1 - pxy0;
+    int dx = abs(pxx1 - pxx0);
+    int dy = abs(pxy1 - pxy0);
 
-    // steps required for generating pixels
-    int steps = abs(dx) > abs(dy) ? abs(dx) : abs(dy);
+    // Determining the direction of the line
+    int xstep = (pxx0 < pxx1) ? 1 : -1;
+    int ystep = (pxy0 < pxy1) ? 1 : -1;
 
-    // calculate increment in x and y for each steps
-    float xincrement = dx / (float) steps;
-    float yincrement = dy / (float) steps;
-
-    // put pixels for each step
-    float x = pxx0;
-    float y = pxy0;
-    for (int i = 0; i <= steps; i++) {
-        int px = (int) x;
-        int py = (int) y;
-    
+    int error = dx - dy;
+    int x = pxx0;
+    int y = pxy0;
+    for (;;) {
         // Bounds check before calculating index
-        if (px >= 0 && px < window.width && py >= 0 && py < window.height) {
-            int index = (window.width * py) + px;
+        if (x >= 0 && x < window.width && y >= 0 && y < window.height) {
+            int index = (window.width * y) + x;
             if (strcmp(window.pixels[index], pattern[0]) == 0)
                 strcpy(window.pixels[index], pattern[8]);
         }
-        x += xincrement;
-        y += yincrement;
-    }
+
+        if (x == pxx1 && y == pxy1) break;
+        int error2 = 2 * error;
+
+        if (error2 > -dy) { // step in the x direction
+            error -= dy;
+            x += xstep;
+        }
+
+        if (error2 < dx) {  // step in the y direction
+            error += dx;
+            y += ystep;
+        }
+    } 
 }
+
+// // draw_surface : draws the surface based on the face definition
+// void draw_surface(vertex_t v0, vertex_t v1, vertex_t v2) {
+    
+// }

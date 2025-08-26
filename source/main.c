@@ -19,8 +19,8 @@ void print_faces(object_t obj) {
 #endif
 
 int main(int argc, char const *argv[]) {
-    const int height = 135;
-    const int width = 612;
+    const int height = 128;
+    const int width = 512;
     double rotation_angle = 0;
     FILE *fp;
 
@@ -42,12 +42,11 @@ int main(int argc, char const *argv[]) {
             return 1;
     }
 
-    if (init_window(height, width) != 0)
-        return 1;
+    if (init_window(height, width) != 0) return 1;
     
     object_t obj = load(fp);
     vertex_t transforms[MAXVERTICES];
-
+    
     for (;;) {
         switch (keypress()) {
             case 'q':
@@ -59,22 +58,20 @@ int main(int argc, char const *argv[]) {
 
         clear_window();
 
-        rotation_angle += 0.05;
+        rotation_angle += 0.01;
 
         for (int i = 0; i < vcount; i++) {
             transforms[i] = obj.vertices[i];
-            rotate_y(rotation_angle, &transforms[i]);
-            rotate_x(rotation_angle, &transforms[i]);
+            rotate_z(rotation_angle, &transforms[i]);
             plot(transforms[i]);
         }
 
-        // Troubleshoot this
         for (int i = 0; i < fcount; i++) {
-            connect(transforms[obj.faces[i].vertex_index[0] - 1], transforms[obj.faces[i].vertex_index[1] - 1]);
-            connect(transforms[obj.faces[i].vertex_index[1] - 1], transforms[obj.faces[i].vertex_index[2] - 1]);
-            connect(transforms[obj.faces[i].vertex_index[2] - 1], transforms[obj.faces[i].vertex_index[0] - 1]);
+            bresenham(transforms[obj.faces[i].vertex_index[0] - 1], transforms[obj.faces[i].vertex_index[1] - 1]);
+            bresenham(transforms[obj.faces[i].vertex_index[1] - 1], transforms[obj.faces[i].vertex_index[2] - 1]);
+            bresenham(transforms[obj.faces[i].vertex_index[2] - 1], transforms[obj.faces[i].vertex_index[0] - 1]);
         }
-
+    
         draw_window();
     }
 
