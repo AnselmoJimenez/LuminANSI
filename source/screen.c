@@ -136,8 +136,18 @@ void plot(vertex_t v) {
         strcpy(window.pixels[index], pattern[9]);
 }
 
+#define NUMPIXELSINDEX   0
+
 // bresenham : Draw a line between vertices
-void bresenham(vertex_t v0, vertex_t v1) {
+unsigned int *bresenham(vertex_t v0, vertex_t v1) {
+    unsigned int maxentries = (window.height > window.width) ? window.height : window.width;
+    unsigned int *linepixels = (unsigned int *) malloc(sizeof(unsigned int) * maxentries + 1);
+    unsigned int lppos = 1;
+    if (linepixels == NULL)
+        return NULL;
+
+    linepixels[NUMPIXELSINDEX] = 0;  // First index used to track num elements
+
     // convert both vertexes into pixel coordinates
     int pxx0 = (window.width / 2)  + (v0.x * focal_length) / (v0.z - CAMERA_Z);
     int pxy0 = (window.height / 2) - (v0.y * focal_length) / (v0.z - CAMERA_Z);
@@ -158,8 +168,8 @@ void bresenham(vertex_t v0, vertex_t v1) {
         // Bounds check before calculating index
         if (x >= 0 && x < window.width && y >= 0 && y < window.height) {
             int index = (window.width * y) + x;
-            if (strcmp(window.pixels[index], pattern[0]) == 0)
-                strcpy(window.pixels[index], pattern[8]);
+            linepixels[lppos++] = index;
+            linepixels[NUMPIXELSINDEX] += 1;
         }
 
         if (x == pxx1 && y == pxy1) break;
@@ -174,10 +184,94 @@ void bresenham(vertex_t v0, vertex_t v1) {
             error += dx;
             y += ystep;
         }
-    } 
+    }
+
+    linepixels = (unsigned int *) realloc(linepixels, sizeof(unsigned int) * linepixels[0] + 1);
+    return linepixels;
 }
 
-// // draw_surface : draws the surface based on the face definition
-// void draw_surface(vertex_t v0, vertex_t v1, vertex_t v2) {
-    
-// }
+// intncpy : copy n integer values from src to dest
+void intncpy(unsigned int *dest, unsigned int *src, unsigned int n) {
+    if (dest == NULL || src == NULL) return;
+    for (; n > 0; --n) *dest++ = *src++;
+}
+
+// compint : comparison function that returns
+//           negative : if a < b
+//           zero     : if a == b
+//           positive : if a > b
+int compint(const int *a, const int *b) {
+    return a - b;
+}
+
+// swap : swap values of the indexes a and b
+void swap(unsigned int *a, unsigned int *b) {
+    int temp = *a;
+    *a = *b;
+    *b = temp;
+}
+
+// quicksort : sorts the elements of an unsigned integer array
+void quicksort(unsigned int *arr, unsigned int low, unsigned int high) {
+    if (low >= high) return;
+
+    // begin partitioning
+    int pivot = arr[high];
+    int i = low - 1;
+
+    for (int j = low; j < high; j++) {
+        if (arr[j] <= pivot) {
+            i++;
+            swap(&arr[i], &arr[j]);
+        }
+    }
+    swap(&arr[i + 1], &arr[high]);
+    ++i;
+
+    quicksort(arr, low, i - 1);
+    quicksort(arr, i + 1, high);
+}
+
+// getedges : identifies the edges on the surface and returns a sorted array with all surfaces pixels
+unsigned int *getedges(vertex_t v0, vertex_t v1, vertex_t v2) {
+    unsigned int *line1 = bresenham(v0, v1);
+    unsigned int *line2 = bresenham(v1, v2);
+    unsigned int *line3 = bresenham(v0, v2);
+    unsigned int totalv = line1[NUMPIXELSINDEX] + line2[NUMPIXELSINDEX] + line3[NUMPIXELSINDEX];
+
+    unsigned int *surfaceedges = (unsigned int *) malloc(sizeof(unsigned int) * totalv);
+    if (surfaceedges == NULL) {
+        free(line1);
+        line1 = NULL;
+        free(line2);
+        line2 = NULL;
+        free(line3);
+        line3 = NULL;
+        return NULL;
+    }
+
+    intncpy(surfaceedges, &line1[1], line1[NUMPIXELSINDEX]);
+    intncpy(surfaceedges + line1[NUMPIXELSINDEX], &line2[1], line2[NUMPIXELSINDEX]);
+    intncpy(surfaceedges + line1[NUMPIXELSINDEX] + line2[NUMPIXELSINDEX], &line3[1], line3[NUMPIXELSINDEX]);
+
+    quicksort(surfaceedges, 0, totalv - 1);
+
+    free(line1);
+    line1 = NULL;
+    free(line2);
+    line2 = NULL;
+    free(line3);
+    line3 = NULL;
+
+    return surfaceedges;
+}
+
+// draw_surface : draws the surface based on the face definition
+void draw_surface(vertex_t v0, vertex_t v1, vertex_t v2) {
+    unsigned int *edgetable = getedges(v0, v1, v2);
+
+    // Scanline Algorithm
+
+    free(edgetable);
+    edgetable = NULL;
+}
