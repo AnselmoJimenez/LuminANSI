@@ -7,14 +7,8 @@
 #include "../include/screen.h"
 
 // new_vertex : create and return a new vertex object
-vertex_t new_vertex(double x, double y, double z) {
-    vertex_t v = {
-        .x = x,
-        .y = y,
-        .z = z,
-    };
-
-    return v;
+vertex_t new_vertex(double x, double y, double z) { 
+    return (vertex_t) { x, y, z };
 }
 
 // rotate_x : rotate the vertex coordinate by angle in the x direction about c
