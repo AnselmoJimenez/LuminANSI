@@ -20,4 +20,4 @@ void plot(vertex_t v);
 unsigned int *bresenham(vertex_t v0, vertex_t v1);
 
 // draw_surface : draws the surface based on the face definition
-void draw_surface(vertex_t v0, vertex_t v1, vertex_t v2);
+void draw_surface(vertex_t v0, vertex_t v1, vertex_t v2, vertex_t vn);

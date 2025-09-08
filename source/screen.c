@@ -8,6 +8,27 @@
 #include "../include/object.h"
 #include "../include/screen.h"
 
+struct termios original_state;
+
+// disable_raw_mode : restore original terminal settings
+void disable_raw_mode(void) { 
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &original_state); 
+}
+
+// enable_raw_mode : sets the terminal into raw mode
+void enable_raw_mode(void) {
+    tcgetattr(STDIN_FILENO, &original_state);   // Current terminal settings
+    atexit(disable_raw_mode);   // Register cleanup function to restore settings on exit
+
+    struct termios new_state = original_state;
+    new_state.c_lflag &= ~(ICANON | ECHO | ISIG);  // Disable canonical mode, echo, and signals
+    new_state.c_cc[VMIN]  = 0;  // Minimum characters to return - Don't wait
+    new_state.c_cc[VTIME] = 0;  // No timeout
+
+    // Apply the new settings
+    tcsetattr(STDIN_FILENO, TCSAFLUSH, &new_state);
+}
+
 // flag if initialization has occurred
 int init = 0;
 
@@ -15,6 +36,7 @@ typedef struct {
     int height;
     int width;
     char **pixels;
+    int *zbuffer;
 } window_t;
 
 window_t window;
@@ -33,25 +55,6 @@ const char *pattern[] = {
     "\xe2\x96\x88"   // █
 };
 
-struct termios original_state;
-
-// disable_raw_mode : restore original terminal settings
-void disable_raw_mode(void) { tcsetattr(STDIN_FILENO, TCSAFLUSH, &original_state); }
-
-// enable_raw_mode : sets the terminal into raw mode
-void enable_raw_mode(void) {
-    tcgetattr(STDIN_FILENO, &original_state);   // Current terminal settings
-    atexit(disable_raw_mode);   // Register cleanup function to restore settings on exit
-
-    struct termios new_state = original_state;
-    new_state.c_lflag &= ~(ICANON | ECHO | ISIG);  // Disable canonical mode, echo, and signals
-    new_state.c_cc[VMIN]  = 0;  // Minimum characters to return - Don't wait
-    new_state.c_cc[VTIME] = 0;  // No timeout
-
-    // Apply the new settings
-    tcsetattr(STDIN_FILENO, TCSAFLUSH, &new_state);
-}
-
 double focal_length;
 
 #define CURSOR_HOME     "\x1B\x5B\x48"
@@ -66,13 +69,14 @@ int init_window(const int height, const int width) {
     window.height = height;
     window.width = width;
     window.pixels = malloc((window.height * window.width) * sizeof(char *));
-    if (window.pixels == NULL)
-        return 1;
-    
+    if (window.pixels == NULL) return 1;
     for (int i = 0; i < window.height * window.width; i++) {
         window.pixels[i] = malloc(PATTERNSIZE * sizeof(char));  // Space + null terminator
         strcpy(window.pixels[i], pattern[0]);
     }
+    window.zbuffer = malloc((window.height * window.width) * sizeof(int));
+    for (int i = 0; i < window.width * window.height; i++)
+        window.zbuffer[i] = INFINITY;
 
     focal_length = window.width / 2;
     printf(CLEAR_SCREEN);
@@ -89,6 +93,7 @@ void destroy_window(void) {
     for (int i = 0; i < window.height * window.width; i++)
         free(window.pixels[i]);
     free(window.pixels);
+    free(window.zbuffer);
 
     disable_raw_mode();
     printf(SHOW_CURSOR);
@@ -196,14 +201,6 @@ void intncpy(unsigned int *dest, unsigned int *src, unsigned int n) {
     for (; n > 0; --n) *dest++ = *src++;
 }
 
-// compint : comparison function that returns
-//           negative : if a < b
-//           zero     : if a == b
-//           positive : if a > b
-int compint(const int *a, const int *b) {
-    return a - b;
-}
-
 // swap : swap values of the indexes a and b
 void swap(unsigned int *a, unsigned int *b) {
     int temp = *a;
@@ -239,7 +236,7 @@ unsigned int *getedges(vertex_t v0, vertex_t v1, vertex_t v2) {
     unsigned int *line3 = bresenham(v0, v2);
     unsigned int totalv = line1[NUMPIXELSINDEX] + line2[NUMPIXELSINDEX] + line3[NUMPIXELSINDEX];
 
-    unsigned int *surfaceedges = (unsigned int *) malloc(sizeof(unsigned int) * totalv);
+    unsigned int *surfaceedges = (unsigned int *) malloc(sizeof(unsigned int) * totalv + 1);
     if (surfaceedges == NULL) {
         free(line1);
         line1 = NULL;
@@ -250,11 +247,12 @@ unsigned int *getedges(vertex_t v0, vertex_t v1, vertex_t v2) {
         return NULL;
     }
 
-    intncpy(surfaceedges, &line1[1], line1[NUMPIXELSINDEX]);
-    intncpy(surfaceedges + line1[NUMPIXELSINDEX], &line2[1], line2[NUMPIXELSINDEX]);
-    intncpy(surfaceedges + line1[NUMPIXELSINDEX] + line2[NUMPIXELSINDEX], &line3[1], line3[NUMPIXELSINDEX]);
+    surfaceedges[NUMPIXELSINDEX] = totalv;
+    intncpy(&surfaceedges[1], &line1[1], line1[NUMPIXELSINDEX]);
+    intncpy(&surfaceedges[1] + line1[NUMPIXELSINDEX], &line2[1], line2[NUMPIXELSINDEX]);
+    intncpy(&surfaceedges[1] + line1[NUMPIXELSINDEX] + line2[NUMPIXELSINDEX], &line3[1], line3[NUMPIXELSINDEX]);
 
-    quicksort(surfaceedges, 0, totalv - 1);
+    quicksort(surfaceedges, 1, totalv - 1);
 
     free(line1);
     line1 = NULL;
@@ -266,11 +264,52 @@ unsigned int *getedges(vertex_t v0, vertex_t v1, vertex_t v2) {
     return surfaceedges;
 }
 
+// normalize : normalize vector v
+vertex_t normalize(vertex_t v) {
+    double magnitude = sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+    if (magnitude == 0.0) 
+        return (vertex_t) { 0, 0, 0 };
+
+    return (vertex_t) { v.x / magnitude, v.y / magnitude, v.z / magnitude };
+}
+
+// dot : calculates the dot product of both vertices
+double dot(vertex_t v0, vertex_t v1) {
+    return v0.x * v1.x + v0.y * v1.y + v0.z * v1.z;
+}
+
+// max : returns the higher value between a and b
+double max(double a, double b) {
+    return (a > b) ? a : b;
+}
+
+// min : returns the lower value between a and b
+double min(double a, double b) {
+    return (a < b) ? a : b;
+}
+
 // draw_surface : draws the surface based on the face definition
-void draw_surface(vertex_t v0, vertex_t v1, vertex_t v2) {
+void draw_surface(vertex_t v0, vertex_t v1, vertex_t v2, vertex_t vn) {
     unsigned int *edgetable = getedges(v0, v1, v2);
+    // vertex_t surface_center = new_vertex((v0.x + v1.x + v2.x) / 3, (v0.y + v1.y + v2.y) / 3, (v0.z + v1.z + v2.z) / 3);
+    // vertex_t light = new_vertex(5, 5, -5);
+    // vertex_t light_direction = normalize(new_vertex(light.x - surface_center.x, light.y - surface_center.y, light.z - surface_center.z));
+    // unsigned int brightness = (unsigned int) (max(0, dot(vn, light_direction)) * 100);
+    // printf("brightness = %d : brightness_index = %d\n", brightness, brightness / 10);
 
     // Scanline Algorithm
+    for (int i = 1; i < edgetable[NUMPIXELSINDEX]; i++) {
+        unsigned int starti = edgetable[i];
+        unsigned int y = edgetable[i] / window.width;
+
+        while (i < edgetable[NUMPIXELSINDEX] && edgetable[++i] / window.width == y);
+
+        unsigned int endi = edgetable[--i];
+        
+        for (starti; starti <= endi; starti++) {
+            strcpy(window.pixels[starti], pattern[9]);
+        }
+    }
 
     free(edgetable);
     edgetable = NULL;
