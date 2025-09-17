@@ -40,8 +40,11 @@ typedef struct {
 } window_t;
 
 window_t window;
+vertex_t light;
+double focal_length;
 
-#define PATTERNSIZE 4
+#define CHARLIMIT   4
+#define PATTERNSIZE 13
 const char *pattern[] = {
     " ",             // empty space
     "\xe2\xa1\x80",  // ⡀
@@ -52,11 +55,13 @@ const char *pattern[] = {
     "\xe2\xa3\xb6",  // ⣶
     "\xe2\xa3\xb7",  // ⣷
     "\xe2\xa3\xbf",  // ⣿
-    "\xe2\x96\x88"   // █
+    "\xe2\x96\x91",  // ░ (light shade)
+    "\xe2\x96\x92",  // ▒ (medium shade)
+    "\xe2\x96\x93",  // ▓ (dark shade)
+    "\xe2\x96\x88"   // █ (full block)
 };
 
-double focal_length;
-
+#define INFINITE        2147483647
 #define CURSOR_HOME     "\x1B\x5B\x48"
 #define CLEAR_SCREEN    "\x1B\x5B\x32\x4A"
 #define HIDE_CURSOR     "\x1B\x5B\x3F\x32\x35\x6C"
@@ -66,19 +71,23 @@ double focal_length;
 int init_window(const int height, const int width) {
     enable_raw_mode();
 
+    // initialize screen variables
     window.height = height;
     window.width = width;
     window.pixels = malloc((window.height * window.width) * sizeof(char *));
-    if (window.pixels == NULL) return 1;
-    for (int i = 0; i < window.height * window.width; i++) {
-        window.pixels[i] = malloc(PATTERNSIZE * sizeof(char));  // Space + null terminator
-        strcpy(window.pixels[i], pattern[0]);
-    }
     window.zbuffer = malloc((window.height * window.width) * sizeof(int));
-    for (int i = 0; i < window.width * window.height; i++)
-        window.zbuffer[i] = INFINITY;
+    if (window.pixels == NULL) return 1;
+    
+    // initialize the screen and zbuffer
+    for (int i = 0; i < window.height * window.width; i++) {
+        window.pixels[i] = malloc(CHARLIMIT * sizeof(char));  // Space + null terminator
+        strcpy(window.pixels[i], pattern[0]);
+        window.zbuffer[i] = INFINITE;
+    }
 
     focal_length = window.width / 2;
+    light = new_vertex(10, 10, -10);
+
     printf(CLEAR_SCREEN);
     printf(HIDE_CURSOR);
     init = 1;
@@ -90,6 +99,7 @@ int init_window(const int height, const int width) {
 void destroy_window(void) {
     if (!init) return;
 
+    // free the pixels and zbuffer
     for (int i = 0; i < window.height * window.width; i++)
         free(window.pixels[i]);
     free(window.pixels);
@@ -118,8 +128,10 @@ void draw_window(void) {
 
 // clear_window : reset the window pixels
 void clear_window(void) {
-    for (int i = 0; i < window.height * window.width; i++)
+    for (int i = 0; i < window.height * window.width; i++) {
         strcpy(window.pixels[i], pattern[0]);
+        window.zbuffer[i] = INFINITE;
+    }
     printf(CURSOR_HOME);
 }
 
@@ -127,7 +139,7 @@ void clear_window(void) {
 
 // plot : put vertex in pixels buffer
 void plot(vertex_t v) {
-    // projected coordinated on a the image plane
+    // projected coordinated on the image plane
     double projx = (v.x * focal_length) / (v.z - CAMERA_Z);
     double projy = (v.y * focal_length) / (v.z - CAMERA_Z);
 
@@ -137,8 +149,10 @@ void plot(vertex_t v) {
 
     // array index
     int index = (window.width * (int) pxy) + (int) pxx;
-    if (index > -1 && index < window.height * window.width) // quick bounds check
-        strcpy(window.pixels[index], pattern[9]);
+    if (index > -1 && index < window.height * window.width) {
+        strcpy(window.pixels[index], pattern[12]);
+        if (v.z < window.zbuffer[index]) window.zbuffer[index] = v.z;
+    }
 }
 
 #define NUMPIXELSINDEX   0
@@ -148,8 +162,7 @@ unsigned int *bresenham(vertex_t v0, vertex_t v1) {
     unsigned int maxentries = (window.height > window.width) ? window.height : window.width;
     unsigned int *linepixels = (unsigned int *) malloc(sizeof(unsigned int) * maxentries + 1);
     unsigned int lppos = 1;
-    if (linepixels == NULL)
-        return NULL;
+    if (linepixels == NULL) return NULL;
 
     linepixels[NUMPIXELSINDEX] = 0;  // First index used to track num elements
 
@@ -229,6 +242,23 @@ void quicksort(unsigned int *arr, unsigned int low, unsigned int high) {
     quicksort(arr, i + 1, high);
 }
 
+// normalize : normalize vector v
+vertex_t normalize(vertex_t v) {
+    double magnitude = sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
+    if (magnitude == 0.0) 
+        return (vertex_t) { 0, 0, 0 };
+
+    return (vertex_t) { v.x / magnitude, v.y / magnitude, v.z / magnitude };
+}
+
+// dot : calculates the dot product of both vertices
+double dot(vertex_t v0, vertex_t v1) {
+    return v0.x * v1.x + v0.y * v1.y + v0.z * v1.z;
+}
+
+#define MAX(a, b) ((a) > (b)) ? (a) : (b)
+#define MIN(a, b) ((a) < (b)) ? (a) : (b)
+
 // getedges : identifies the edges on the surface and returns a sorted array with all surfaces pixels
 unsigned int *getedges(vertex_t v0, vertex_t v1, vertex_t v2) {
     unsigned int *line1 = bresenham(v0, v1);
@@ -262,30 +292,6 @@ unsigned int *getedges(vertex_t v0, vertex_t v1, vertex_t v2) {
     line3 = NULL;
 
     return surfaceedges;
-}
-
-// normalize : normalize vector v
-vertex_t normalize(vertex_t v) {
-    double magnitude = sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
-    if (magnitude == 0.0) 
-        return (vertex_t) { 0, 0, 0 };
-
-    return (vertex_t) { v.x / magnitude, v.y / magnitude, v.z / magnitude };
-}
-
-// dot : calculates the dot product of both vertices
-double dot(vertex_t v0, vertex_t v1) {
-    return v0.x * v1.x + v0.y * v1.y + v0.z * v1.z;
-}
-
-// max : returns the higher value between a and b
-double max(double a, double b) {
-    return (a > b) ? a : b;
-}
-
-// min : returns the lower value between a and b
-double min(double a, double b) {
-    return (a < b) ? a : b;
 }
 
 // draw_surface : draws the surface based on the face definition
