@@ -13,11 +13,5 @@ void draw_window(void);
 // clear_window : reset the window pixels
 void clear_window(void);
 
-// plot : put vertex in screen buffer
-void plot(vertex_t v);
-
-// bresenham : Draw a line between vertices and return a list of the pixels in the line
-unsigned int *bresenham(vertex_t v0, vertex_t v1);
-
 // draw_surface : draws the surface based on the face definition
 void draw_surface(vertex_t v0, vertex_t v1, vertex_t v2, vertex_t vn);

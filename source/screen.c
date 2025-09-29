@@ -135,94 +135,21 @@ void clear_window(void) {
     printf(CURSOR_HOME);
 }
 
-#define CAMERA_Z -10
-
-// plot : put vertex in pixels buffer
-void plot(vertex_t v) {
-    // projected coordinated on the image plane
-    double projx = (v.x * focal_length) / (v.z - CAMERA_Z);
-    double projy = (v.y * focal_length) / (v.z - CAMERA_Z);
-
-    // convert to pixel coordinates
-    double pxx = (window.width / 2) + projx;
-    double pxy = (window.height / 2) - projy;
-
-    // array index
-    int index = (window.width * (int) pxy) + (int) pxx;
-    if (index > -1 && index < window.height * window.width) {
-        strcpy(window.pixels[index], pattern[12]);
-        if (v.z < window.zbuffer[index]) window.zbuffer[index] = v.z;
-    }
-}
-
-#define NUMPIXELSINDEX   0
-
-// bresenham : Draw a line between vertices
-unsigned int *bresenham(vertex_t v0, vertex_t v1) {
-    unsigned int maxentries = (window.height > window.width) ? window.height : window.width;
-    unsigned int *linepixels = (unsigned int *) malloc(sizeof(unsigned int) * maxentries + 1);
-    unsigned int lppos = 1;
-    if (linepixels == NULL) return NULL;
-
-    linepixels[NUMPIXELSINDEX] = 0;  // First index used to track num elements
-
-    // convert both vertexes into pixel coordinates
-    int pxx0 = (window.width / 2)  + (v0.x * focal_length) / (v0.z - CAMERA_Z);
-    int pxy0 = (window.height / 2) - (v0.y * focal_length) / (v0.z - CAMERA_Z);
-    int pxx1 = (window.width / 2)  + (v1.x * focal_length) / (v1.z - CAMERA_Z);
-    int pxy1 = (window.height / 2) - (v1.y * focal_length) / (v1.z - CAMERA_Z);
-
-    int dx = abs(pxx1 - pxx0);
-    int dy = abs(pxy1 - pxy0);
-
-    // Determining the direction of the line
-    int xstep = (pxx0 < pxx1) ? 1 : -1;
-    int ystep = (pxy0 < pxy1) ? 1 : -1;
-
-    int error = dx - dy;
-    int x = pxx0;
-    int y = pxy0;
-    for (;;) {
-        // Bounds check before calculating index
-        if (x >= 0 && x < window.width && y >= 0 && y < window.height) {
-            int index = (window.width * y) + x;
-            linepixels[lppos++] = index;
-            linepixels[NUMPIXELSINDEX] += 1;
-        }
-
-        if (x == pxx1 && y == pxy1) break;
-        int error2 = 2 * error;
-
-        if (error2 > -dy) { // step in the x direction
-            error -= dy;
-            x += xstep;
-        }
-
-        if (error2 < dx) {  // step in the y direction
-            error += dx;
-            y += ystep;
-        }
-    }
-
-    linepixels = (unsigned int *) realloc(linepixels, sizeof(unsigned int) * linepixels[0] + 1);
-    return linepixels;
-}
-
 // intncpy : copy n integer values from src to dest
-void intncpy(unsigned int *dest, unsigned int *src, unsigned int n) {
+static void intncpy(unsigned int *dest, unsigned int *src, unsigned int n) {
     if (dest == NULL || src == NULL) return;
     for (; n > 0; --n) *dest++ = *src++;
 }
 
 // swap : swap values of the indexes a and b
-void swap(unsigned int *a, unsigned int *b) {
+static void swap(unsigned int *a, unsigned int *b) {
     int temp = *a;
     *a = *b;
     *b = temp;
 }
 
 // quicksort : sorts the elements of an unsigned integer array
-void quicksort(unsigned int *arr, unsigned int low, unsigned int high) {
+static void quicksort(unsigned int *arr, unsigned int low, unsigned int high) {
     if (low >= high) return;
 
     // begin partitioning
@@ -243,80 +170,127 @@ void quicksort(unsigned int *arr, unsigned int low, unsigned int high) {
 }
 
 // normalize : normalize vector v
-vertex_t normalize(vertex_t v) {
+static vertex_t normalize(vertex_t v) {
     double magnitude = sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
     if (magnitude == 0.0) 
-        return (vertex_t) { 0, 0, 0 };
-
-    return (vertex_t) { v.x / magnitude, v.y / magnitude, v.z / magnitude };
+        return new_vertex(0, 0, 0);
+    return new_vertex(v.x / magnitude, v.y / magnitude, v.z / magnitude);
 }
 
 // dot : calculates the dot product of both vertices
-double dot(vertex_t v0, vertex_t v1) {
+static double dot(vertex_t v0, vertex_t v1) {
     return v0.x * v1.x + v0.y * v1.y + v0.z * v1.z;
 }
+
+#define CAMERA_Z -5
 
 #define MAX(a, b) ((a) > (b)) ? (a) : (b)
 #define MIN(a, b) ((a) < (b)) ? (a) : (b)
 
-// getedges : identifies the edges on the surface and returns a sorted array with all surfaces pixels
-unsigned int *getedges(vertex_t v0, vertex_t v1, vertex_t v2) {
-    unsigned int *line1 = bresenham(v0, v1);
-    unsigned int *line2 = bresenham(v1, v2);
-    unsigned int *line3 = bresenham(v0, v2);
-    unsigned int totalv = line1[NUMPIXELSINDEX] + line2[NUMPIXELSINDEX] + line3[NUMPIXELSINDEX];
+typedef struct pixel {
+    int x;
+    int y;
+} pixel_t;
 
-    unsigned int *surfaceedges = (unsigned int *) malloc(sizeof(unsigned int) * totalv + 1);
-    if (surfaceedges == NULL) {
-        free(line1);
-        line1 = NULL;
-        free(line2);
-        line2 = NULL;
-        free(line3);
-        line3 = NULL;
-        return NULL;
+// wtopx : converts 3D world coordinates to pixel coordinates
+static pixel_t wtopx(vertex_t v) {
+    return (pixel_t) {
+        .x = (int) ((window.width / 2)  + (v.x * focal_length) / (v.z - CAMERA_Z)),
+        .y = (int) ((window.height / 2) - (v.y * focal_length) / (v.z - CAMERA_Z))
+    };
+}
+
+// plotpx : Plot pixel in pixels buffer
+static void plotpx(int x, int y, int z) {
+    // array index
+    int index = (window.width * y) + x;
+    if (index > -1 && index < window.height * window.width) {
+        if (z < window.zbuffer[index]) { 
+            window.zbuffer[index] = z;
+            strcpy(window.pixels[index], pattern[12]);
+        }
     }
+}
 
-    surfaceedges[NUMPIXELSINDEX] = totalv;
-    intncpy(&surfaceedges[1], &line1[1], line1[NUMPIXELSINDEX]);
-    intncpy(&surfaceedges[1] + line1[NUMPIXELSINDEX], &line2[1], line2[NUMPIXELSINDEX]);
-    intncpy(&surfaceedges[1] + line1[NUMPIXELSINDEX] + line2[NUMPIXELSINDEX], &line3[1], line3[NUMPIXELSINDEX]);
+// bresenham : Draw a line between vertices
+static void get_edge(vertex_t v0, vertex_t v1) {
+    // convert both vertexes into pixel coordinates
+    pixel_t px0 = wtopx(v0);
+    pixel_t px1 = wtopx(v1);
 
-    quicksort(surfaceedges, 1, totalv - 1);
+    // calculating deltas
+    int dx = abs(px1.x - px0.x);
+    int dy = abs(px1.y - px0.y);
+    int dz = abs(v1.z - v0.z);
 
-    free(line1);
-    line1 = NULL;
-    free(line2);
-    line2 = NULL;
-    free(line3);
-    line3 = NULL;
+    // Determining the direction of the line
+    int xs = (px0.x < px1.x) ? 1 : -1;
+    int ys = (px0.y < px1.y) ? 1 : -1;
+    int zs = (v0.z  < v1.z ) ? 1 : -1;
 
-    return surfaceedges;
+    int x = (int) px0.x;
+    int y = (int) px0.y;
+    double z = v0.z;
+    
+    if (dx >= dy && dx >= dz) { // X is the driving axis
+        int p0 = 2 * dy - dx;
+        int p1 = (int) (2 * dz - dx);
+        for (int i = 0; i < dx + 1; i++) {
+            plotpx(x, y, (int) z);
+            if (p0 >= 0) {
+                y += ys;
+                p0 -= 2 * dx;
+            }
+            if (p1 >= 0) {
+                z += zs;
+                p1 -= 2 * dx;
+            }
+            p0 += 2 * dy;
+            p1 += 2 * dz;
+            x += xs;
+        }
+    }
+    else if (dy >= dx && dy >= dz) { // Y is the driving axis
+        int p0 = 2 * dx - dy;
+        int p1 = (int) (2 * dz - dy);
+        for (int i = 0; i < dy + 1; i++) {
+            plotpx(x, y, (int) z);
+            if (p0 >= 0) {
+                x += xs;
+                p0 -= 2 * dy;
+            }
+            if (p1 >= 0) {
+                z += zs;
+                p1 -= 2 * dy;
+            }
+            p0 += 2 * dx;
+            p1 += 2 * dz;
+            y += ys;
+        }
+    }
+    else if (dz >= dx && dz >= dy) { // Z is the driving axis
+        int p0 = (int) (2 * dy - dz);
+        int p1 = (int) (2 * dx - dz);
+        for (int i = 0; i < dz + 1; i++) {
+            plotpx(x, y, (int) z);
+            if (p0 >= 0) {
+                y += ys;
+                p0 -= 2 * dz;
+            }
+            if (p1 >= 0) {
+                x += xs;
+                p1 -= 2 * dz;
+            }
+            p0 += 2 * dy;
+            p1 += 2 * dx;
+            z += zs;
+        }
+    }
 }
 
 // draw_surface : draws the surface based on the face definition
 void draw_surface(vertex_t v0, vertex_t v1, vertex_t v2, vertex_t vn) {
-    unsigned int *edgetable = getedges(v0, v1, v2);
-    // vertex_t surface_center = new_vertex((v0.x + v1.x + v2.x) / 3, (v0.y + v1.y + v2.y) / 3, (v0.z + v1.z + v2.z) / 3);
-    // vertex_t light = new_vertex(5, 5, -5);
-    // vertex_t light_direction = normalize(new_vertex(light.x - surface_center.x, light.y - surface_center.y, light.z - surface_center.z));
-    // unsigned int brightness = (unsigned int) (max(0, dot(vn, light_direction)) * 100);
-    // printf("brightness = %d : brightness_index = %d\n", brightness, brightness / 10);
-
-    // Scanline Algorithm
-    for (int i = 1; i < edgetable[NUMPIXELSINDEX]; i++) {
-        unsigned int starti = edgetable[i];
-        unsigned int y = edgetable[i] / window.width;
-
-        while (i < edgetable[NUMPIXELSINDEX] && edgetable[++i] / window.width == y);
-
-        unsigned int endi = edgetable[--i];
-        
-        for (starti; starti <= endi; starti++) {
-            strcpy(window.pixels[starti], pattern[9]);
-        }
-    }
-
-    free(edgetable);
-    edgetable = NULL;
+    get_edge(v0, v1);
+    get_edge(v1, v2);
+    get_edge(v0, v2);
 }
