@@ -79,7 +79,7 @@ object_t load(FILE *fp) {
                     ; // skip to next vertex and begin parsing
                 if (*lp == ' ') lp++;
 
-                while (*lp != '\n' && *lp != '\0') {
+                while (*lp != '\n' && *lp != '\0' && *lp != EOF) {
                     face_t new_face;
                     new_face.vertex_index[0] = subdivrootv;
                     new_face.vertex_index[1] = last_vertex;
