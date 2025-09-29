@@ -58,12 +58,12 @@ int main(int argc, char const *argv[]) {
 
         clear_window();
 
-        rotation_angle += 0.05;
+        rotation_angle += 0.005;
 
         for (int i = 0; i < vcount; i++) {
             transforms[i] = obj.vertices[i];
             rotate_z(rotation_angle, &transforms[i]);
-            rotate_y(rotation_angle, &transforms[i]);
+            // rotate_y(rotation_angle, &transforms[i]);
         }
 
         for (int i = 0; i < fcount; i++) {
@@ -71,7 +71,6 @@ int main(int argc, char const *argv[]) {
                     transforms[obj.faces[i].vertex_index[1] - 1], 
                     transforms[obj.faces[i].vertex_index[2] - 1],
                     obj.normals[obj.faces[i].normal_index]);
-
         }
     
         draw_window();
