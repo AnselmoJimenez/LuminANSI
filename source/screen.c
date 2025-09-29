@@ -74,8 +74,8 @@ int init_window(const int height, const int width) {
     // initialize screen variables
     window.height = height;
     window.width = width;
-    window.pixels = malloc((window.height * window.width) * sizeof(char *));
-    window.zbuffer = malloc((window.height * window.width) * sizeof(int));
+    window.pixels = (char **) malloc((window.height * window.width) * sizeof(char *));
+    window.zbuffer = (int *) malloc((window.height * window.width) * sizeof(int));
     if (window.pixels == NULL) return 1;
     
     // initialize the screen and zbuffer
@@ -192,6 +192,13 @@ typedef struct pixel {
     int y;
 } pixel_t;
 
+static pixel_t new_pixel(int x, int y) {
+    return (pixel_t) {
+        .x = x,
+        .y = y
+    };
+}
+
 // wtopx : converts 3D world coordinates to pixel coordinates
 static pixel_t wtopx(vertex_t v) {
     return (pixel_t) {
@@ -212,8 +219,20 @@ static void plotpx(int x, int y, int z) {
     }
 }
 
+typedef struct edge {
+    pixel_t *pixels;
+    int *zbuffer;
+    unsigned int length;
+} edge_t;
+
 // bresenham : Draw a line between vertices
-static void get_edge(vertex_t v0, vertex_t v1) {
+static edge_t get_edge(vertex_t v0, vertex_t v1) {
+    edge_t edge;
+    int maxlength = (window.width > window.height) ? window.width : window.height;
+    edge.pixels = (pixel_t *) malloc(maxlength * sizeof(pixel_t));
+    edge.zbuffer = (int *) malloc(maxlength * sizeof(int));
+    edge.length = 0;
+
     // convert both vertexes into pixel coordinates
     pixel_t px0 = wtopx(v0);
     pixel_t px1 = wtopx(v1);
@@ -236,7 +255,9 @@ static void get_edge(vertex_t v0, vertex_t v1) {
         int p0 = 2 * dy - dx;
         int p1 = (int) (2 * dz - dx);
         for (int i = 0; i < dx + 1; i++) {
-            plotpx(x, y, (int) z);
+            edge.pixels[edge.length]  = new_pixel(x, y);
+            edge.zbuffer[edge.length] = (int) z;
+            ++edge.length;
             if (p0 >= 0) {
                 y += ys;
                 p0 -= 2 * dx;
@@ -254,7 +275,9 @@ static void get_edge(vertex_t v0, vertex_t v1) {
         int p0 = 2 * dx - dy;
         int p1 = (int) (2 * dz - dy);
         for (int i = 0; i < dy + 1; i++) {
-            plotpx(x, y, (int) z);
+            edge.pixels[edge.length]  = new_pixel(x, y);
+            edge.zbuffer[edge.length] = (int) z;
+            ++edge.length;
             if (p0 >= 0) {
                 x += xs;
                 p0 -= 2 * dy;
@@ -272,7 +295,9 @@ static void get_edge(vertex_t v0, vertex_t v1) {
         int p0 = (int) (2 * dy - dz);
         int p1 = (int) (2 * dx - dz);
         for (int i = 0; i < dz + 1; i++) {
-            plotpx(x, y, (int) z);
+            edge.pixels[edge.length]  = new_pixel(x, y);
+            edge.zbuffer[edge.length] = (int) z;
+            ++edge.length;
             if (p0 >= 0) {
                 y += ys;
                 p0 -= 2 * dz;
@@ -286,11 +311,23 @@ static void get_edge(vertex_t v0, vertex_t v1) {
             z += zs;
         }
     }
+
+    edge.pixels  = (pixel_t *) realloc(edge.pixels, edge.length * sizeof(pixel_t));
+    edge.zbuffer = (int *) realloc(edge.zbuffer, edge.length * sizeof(int));
+    return edge;
 }
 
 // draw_surface : draws the surface based on the face definition
 void draw_surface(vertex_t v0, vertex_t v1, vertex_t v2, vertex_t vn) {
-    get_edge(v0, v1);
-    get_edge(v1, v2);
-    get_edge(v0, v2);
+    edge_t e0 = get_edge(v0, v1);
+    edge_t e1 = get_edge(v1, v2);
+    edge_t e2 = get_edge(v0, v2);
+
+    for (int i = 0; i < e0.length; i++) plotpx(e0.pixels[i].x, e0.pixels[i].y, e0.zbuffer[i]);
+    for (int i = 0; i < e1.length; i++) plotpx(e1.pixels[i].x, e1.pixels[i].y, e1.zbuffer[i]);
+    for (int i = 0; i < e2.length; i++) plotpx(e2.pixels[i].x, e2.pixels[i].y, e2.zbuffer[i]);
+
+    free(e0.pixels); free(e0.zbuffer); e0.pixels = NULL; e0.zbuffer = NULL;
+    free(e1.pixels); free(e1.zbuffer); e1.pixels = NULL; e1.zbuffer = NULL;
+    free(e2.pixels); free(e2.zbuffer); e2.pixels = NULL; e2.zbuffer = NULL;
 }
