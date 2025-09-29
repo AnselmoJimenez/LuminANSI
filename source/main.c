@@ -4,7 +4,7 @@
 #include "../include/screen.h"
 #include "../include/opt.h"
 
-// #define DEBUG
+#define DEBUG
 #ifdef DEBUG
 void print_faces(object_t obj) {
     for (int i = 0; i < fcount; i++) {
@@ -46,7 +46,7 @@ int main(int argc, char const *argv[]) {
     
     object_t obj = load(fp);
     vertex_t transforms[MAXVERTICES];
-    
+
     for (;;) {
         switch (keypress()) {
             case 'q':
