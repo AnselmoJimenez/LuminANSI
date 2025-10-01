@@ -4,6 +4,7 @@
 #include <unistd.h>
 #include <termios.h>
 #include <math.h>
+#include <float.h>
 
 #include "../include/object.h"
 #include "../include/screen.h"
@@ -36,12 +37,12 @@ typedef struct {
     int height;
     int width;
     char **pixels;
-    int *zbuffer;
+    float *zbuffer;
 } window_t;
 
 window_t window;
 vertex_t light;
-double focal_length;
+float focal_length;
 
 #define CHARLIMIT   4
 #define PATTERNSIZE 13
@@ -61,7 +62,6 @@ const char *pattern[] = {
     "\xe2\x96\x88"   // █ (full block)
 };
 
-#define INFINITE        2147483647
 #define CURSOR_HOME     "\x1B\x5B\x48"
 #define CLEAR_SCREEN    "\x1B\x5B\x32\x4A"
 #define HIDE_CURSOR     "\x1B\x5B\x3F\x32\x35\x6C"
@@ -75,14 +75,14 @@ int init_window(const int height, const int width) {
     window.height = height;
     window.width = width;
     window.pixels = (char **) malloc((window.height * window.width) * sizeof(char *));
-    window.zbuffer = (int *) malloc((window.height * window.width) * sizeof(int));
+    window.zbuffer = (float *) malloc((window.height * window.width) * sizeof(float));
     if (window.pixels == NULL) return 1;
     
     // initialize the screen and zbuffer
     for (int i = 0; i < window.height * window.width; i++) {
         window.pixels[i] = malloc(CHARLIMIT * sizeof(char));  // Space + null terminator
         strcpy(window.pixels[i], pattern[0]);
-        window.zbuffer[i] = INFINITE;
+        window.zbuffer[i] = FLT_MAX;
     }
 
     focal_length = window.width / 2;
@@ -130,7 +130,7 @@ void draw_window(void) {
 void clear_window(void) {
     for (int i = 0; i < window.height * window.width; i++) {
         strcpy(window.pixels[i], pattern[0]);
-        window.zbuffer[i] = INFINITE;
+        window.zbuffer[i] = FLT_MAX;
     }
     printf(CURSOR_HOME);
 }
@@ -139,34 +139,6 @@ void clear_window(void) {
 static void intncpy(unsigned int *dest, unsigned int *src, unsigned int n) {
     if (dest == NULL || src == NULL) return;
     for (; n > 0; --n) *dest++ = *src++;
-}
-
-// swap : swap values of the indexes a and b
-static void swap(unsigned int *a, unsigned int *b) {
-    int temp = *a;
-    *a = *b;
-    *b = temp;
-}
-
-// quicksort : sorts the elements of an unsigned integer array
-static void quicksort(unsigned int *arr, unsigned int low, unsigned int high) {
-    if (low >= high) return;
-
-    // begin partitioning
-    int pivot = arr[high];
-    int i = low - 1;
-
-    for (int j = low; j < high; j++) {
-        if (arr[j] <= pivot) {
-            i++;
-            swap(&arr[i], &arr[j]);
-        }
-    }
-    swap(&arr[i + 1], &arr[high]);
-    ++i;
-
-    quicksort(arr, low, i - 1);
-    quicksort(arr, i + 1, high);
 }
 
 // normalize : normalize vector v
@@ -188,14 +160,16 @@ static double dot(vertex_t v0, vertex_t v1) {
 #define MIN(a, b) ((a) < (b)) ? (a) : (b)
 
 typedef struct pixel {
-    int x;
-    int y;
+    int x;     // screen pixel x coordinate
+    int y;     // screen pixel y coordinate
+    float z;   // 3D space z coordinate
 } pixel_t;
 
-static pixel_t new_pixel(int x, int y) {
+static pixel_t new_pixel(int x, int y, float z) {
     return (pixel_t) {
         .x = x,
-        .y = y
+        .y = y,
+        .z = z
     };
 }
 
@@ -203,14 +177,15 @@ static pixel_t new_pixel(int x, int y) {
 static pixel_t wtopx(vertex_t v) {
     return (pixel_t) {
         .x = (int) ((window.width / 2)  + (v.x * focal_length) / (v.z - CAMERA_Z)),
-        .y = (int) ((window.height / 2) - (v.y * focal_length) / (v.z - CAMERA_Z))
+        .y = (int) ((window.height / 2) - (v.y * focal_length) / (v.z - CAMERA_Z)),
+        .z = (float) v.z
     };
 }
 
 // plotpx : Plot pixel in pixels buffer
-static void plotpx(int x, int y, int z) {
+static void plotpx(unsigned int x, unsigned int y, float z) {
     // array index
-    int index = (window.width * y) + x;
+    unsigned int index = (window.width * y) + x;
     if (index > -1 && index < window.height * window.width) {
         if (z < window.zbuffer[index]) { 
             window.zbuffer[index] = z;
@@ -219,9 +194,41 @@ static void plotpx(int x, int y, int z) {
     }
 }
 
+// swap : swap values of the indexes a and b
+static void swap(pixel_t *a, pixel_t *b) {
+    pixel_t temp = *a;
+    *a = *b;
+    *b = temp;
+}
+
+// quicksort : sorts the elements of an array of pixels by the coord flag
+static void quicksort(pixel_t *arr, int low, int high, char coord) {
+    if (low >= high) return;
+    if (coord != 'x' && coord != 'y') return;
+
+    // begin partitioning
+    int pivot = arr[high].y;
+    int i = low - 1;
+
+    for (int j = low; j < high; j++) {
+        if (coord == 'x' && arr[j].x <= pivot) {
+            i++;
+            swap(&arr[i], &arr[j]);
+        }
+        else if (coord == 'y' && arr[j].y <= pivot) {
+            i++;
+            swap(&arr[i], &arr[j]);            
+        }
+    }
+    swap(&arr[i + 1], &arr[high]);
+    ++i;
+
+    quicksort(arr, low, i - 1, coord);
+    quicksort(arr, i + 1, high, coord);
+}
+
 typedef struct edge {
     pixel_t *pixels;
-    int *zbuffer;
     unsigned int length;
 } edge_t;
 
@@ -230,7 +237,6 @@ static edge_t get_edge(vertex_t v0, vertex_t v1) {
     edge_t edge;
     int maxlength = (window.width > window.height) ? window.width : window.height;
     edge.pixels = (pixel_t *) malloc(maxlength * sizeof(pixel_t));
-    edge.zbuffer = (int *) malloc(maxlength * sizeof(int));
     edge.length = 0;
 
     // convert both vertexes into pixel coordinates
@@ -255,9 +261,7 @@ static edge_t get_edge(vertex_t v0, vertex_t v1) {
         int p0 = 2 * dy - dx;
         int p1 = (int) (2 * dz - dx);
         for (int i = 0; i < dx + 1; i++) {
-            edge.pixels[edge.length]  = new_pixel(x, y);
-            edge.zbuffer[edge.length] = (int) z;
-            ++edge.length;
+            edge.pixels[edge.length++]  = new_pixel(x, y, (float) z);
             if (p0 >= 0) {
                 y += ys;
                 p0 -= 2 * dx;
@@ -275,9 +279,7 @@ static edge_t get_edge(vertex_t v0, vertex_t v1) {
         int p0 = 2 * dx - dy;
         int p1 = (int) (2 * dz - dy);
         for (int i = 0; i < dy + 1; i++) {
-            edge.pixels[edge.length]  = new_pixel(x, y);
-            edge.zbuffer[edge.length] = (int) z;
-            ++edge.length;
+            edge.pixels[edge.length++]  = new_pixel(x, y, (float) z);
             if (p0 >= 0) {
                 x += xs;
                 p0 -= 2 * dy;
@@ -295,9 +297,7 @@ static edge_t get_edge(vertex_t v0, vertex_t v1) {
         int p0 = (int) (2 * dy - dz);
         int p1 = (int) (2 * dx - dz);
         for (int i = 0; i < dz + 1; i++) {
-            edge.pixels[edge.length]  = new_pixel(x, y);
-            edge.zbuffer[edge.length] = (int) z;
-            ++edge.length;
+            edge.pixels[edge.length++] = new_pixel(x, y, (float) z);
             if (p0 >= 0) {
                 y += ys;
                 p0 -= 2 * dz;
@@ -312,22 +312,82 @@ static edge_t get_edge(vertex_t v0, vertex_t v1) {
         }
     }
 
-    edge.pixels  = (pixel_t *) realloc(edge.pixels, edge.length * sizeof(pixel_t));
-    edge.zbuffer = (int *) realloc(edge.zbuffer, edge.length * sizeof(int));
+    // resize the array holding the pixels and sort them by y value before returning
+    edge.pixels = (pixel_t *) realloc(edge.pixels, edge.length * sizeof(pixel_t));
+    quicksort(edge.pixels, 0, edge.length - 1, 'y');
+
     return edge;
+}
+
+typedef struct intersection {
+    pixel_t left, right;
+} intersection_t;
+
+// fill_surface: fills in the surface while interpolating z values
+static void fill_surface(intersection_t intersections, int y) {}
+
+// get_intersection: Obtains the intersection at a scanline given the parameter edges
+static intersection_t get_intersection(pixel_t endpoints[3], int y) {
+    intersection_t result;
+    pixel_t hits[2];
+    unsigned int count = 0;
+
+    // Check each of the 3 edges
+    for (unsigned int i = 0; i < 3; i++) {
+        pixel_t px_start = endpoints[i];
+        pixel_t px_end = endpoints[(i + 1) % 3];
+
+        int min_y = (px_start.y < px_end.y) ? px_start.y : px_end.y;
+        int max_y = (px_start.y > px_end.y) ? px_start.y : px_end.y;
+
+        if (y < min_y || y >= max_y) continue;
+
+        // Calculate intersection
+        float t = (float)(y - px_start.y) / (px_end.y - px_start.y);
+        int x = px_start.x + t * (px_end.x - px_start.x);
+        float z = px_start.z + t * (px_end.z - px_start.z);
+
+        hits[count++] = new_pixel(x, y, z);
+    }
+
+    // sort by x values
+    if (count == 2 && hits[0].x > hits[1].x)
+        swap(&hits[0], &hits[1]);
+    
+    result.left = hits[0];
+    result.right = (count == 2) ? hits[1] : hits[0];
+
+    printf("Intersection: (%d, %d) <-> (%d, %d)\n", result.left.x, result.left.y, result.right.x, result.right.y);
+
+    return result;
 }
 
 // draw_surface : draws the surface based on the face definition
 void draw_surface(vertex_t v0, vertex_t v1, vertex_t v2, vertex_t vn) {
+    // Initialize vertex screen coordinates
+    pixel_t px0 = wtopx(v0);
+    pixel_t px1 = wtopx(v1);
+    pixel_t px2 = wtopx(v2);
+    pixel_t endpoints[3] = { px0, px1, px2 };
+
+    // Initialize edges 
     edge_t e0 = get_edge(v0, v1);
     edge_t e1 = get_edge(v1, v2);
     edge_t e2 = get_edge(v0, v2);
 
-    for (int i = 0; i < e0.length; i++) plotpx(e0.pixels[i].x, e0.pixels[i].y, e0.zbuffer[i]);
-    for (int i = 0; i < e1.length; i++) plotpx(e1.pixels[i].x, e1.pixels[i].y, e1.zbuffer[i]);
-    for (int i = 0; i < e2.length; i++) plotpx(e2.pixels[i].x, e2.pixels[i].y, e2.zbuffer[i]);
+    // Find MAX and MIN y value for the current surface
+    unsigned int min_y = MIN(px0.y, MIN(px1.y, px2.y));
+    unsigned int max_y = MAX(px0.y, MAX(px1.y, px2.y));
 
-    free(e0.pixels); free(e0.zbuffer); e0.pixels = NULL; e0.zbuffer = NULL;
-    free(e1.pixels); free(e1.zbuffer); e1.pixels = NULL; e1.zbuffer = NULL;
-    free(e2.pixels); free(e2.zbuffer); e2.pixels = NULL; e2.zbuffer = NULL;
+    // scan line, find intersections, and fill based on z coordinate
+    for (unsigned int y = min_y; y <= max_y; y++) {
+        intersection_t intersect = get_intersection(endpoints, y);
+
+        // then fill scanline with pixel coordinates
+        fill_surface(intersect, y);
+    }    
+
+    free(e0.pixels); e0.pixels = NULL;
+    free(e1.pixels); e1.pixels = NULL;
+    free(e2.pixels); e2.pixels = NULL;
 }
