@@ -183,9 +183,9 @@ static pixel_t wtopx(vertex_t v) {
 }
 
 // plotpx : Plot pixel in pixels buffer
-static void plotpx(unsigned int x, unsigned int y, float z) {
+static void plotpx(int x, int y, float z) {
     // array index
-    unsigned int index = (window.width * y) + x;
+    int index = (window.width * y) + x;
     if (index > -1 && index < window.height * window.width) {
         if (z < window.zbuffer[index]) { 
             window.zbuffer[index] = z;
@@ -323,8 +323,20 @@ typedef struct intersection {
     pixel_t left, right;
 } intersection_t;
 
+// TODO: Calculate brightness
 // fill_surface: fills in the surface while interpolating z values
-static void fill_surface(intersection_t intersections, int y) {}
+static void fill_surface(intersection_t intersections, int y) {
+    int dx = intersections.right.x - intersections.left.x;
+    float dz = intersections.right.z - intersections.left.z;
+
+    for (int x = intersections.left.x + 1; x < intersections.right.x; x++) {
+        // Interpolate through z
+        float t = (float) (x - intersections.left.x) / dx;
+        float z = intersections.left.z + t * dz;
+
+        plotpx(x, y, z);
+    }
+}
 
 // get_intersection: Obtains the intersection at a scanline given the parameter edges
 static intersection_t get_intersection(pixel_t endpoints[3], int y) {
@@ -340,13 +352,19 @@ static intersection_t get_intersection(pixel_t endpoints[3], int y) {
         int min_y = (px_start.y < px_end.y) ? px_start.y : px_end.y;
         int max_y = (px_start.y > px_end.y) ? px_start.y : px_end.y;
 
+        // if y does not exist within this edge, continue
         if (y < min_y || y >= max_y) continue;
 
         // Calculate intersection
-        float t = (float)(y - px_start.y) / (px_end.y - px_start.y);
-        int x = px_start.x + t * (px_end.x - px_start.x);
-        float z = px_start.z + t * (px_end.z - px_start.z);
+        int dx = px_end.x - px_start.x;
+        int dy = px_end.y - px_start.y;
+        float dz = px_end.z - px_start.z;
 
+        float t = (float)(y - px_start.y) / dy;
+        int x = px_start.x + t * dx;
+        float z = px_start.z + t * dz;
+
+        // add this pixel to the hit array
         hits[count++] = new_pixel(x, y, z);
     }
 
@@ -356,8 +374,6 @@ static intersection_t get_intersection(pixel_t endpoints[3], int y) {
     
     result.left = hits[0];
     result.right = (count == 2) ? hits[1] : hits[0];
-
-    printf("Intersection: (%d, %d) <-> (%d, %d)\n", result.left.x, result.left.y, result.right.x, result.right.y);
 
     return result;
 }

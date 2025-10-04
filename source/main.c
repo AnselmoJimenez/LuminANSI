@@ -47,44 +47,34 @@ int main(int argc, char const *argv[]) {
     object_t obj = load(fp);
     vertex_t transforms[MAXVERTICES];
 
-    for (int i = 0; i < vcount; i++)
-        transforms[i] = obj.vertices[i];
+    for (;;) {
+        switch (keypress()) {
+            case 'q':
+                destroy_window();
+                fclose(fp);
+                return 0;
+            default: break;
+        }
 
-    for (int i = 0; i < fcount; i++) {
-        draw_surface(transforms[obj.faces[i].vertex_index[0] - 1], 
+        clear_window();
+
+        rotation_angle += 0.005;
+
+        for (int i = 0; i < vcount; i++) {
+            transforms[i] = obj.vertices[i];
+            rotate_z(rotation_angle, &transforms[i]);
+            // rotate_y(rotation_angle, &transforms[i]);
+        }
+
+        for (int i = 0; i < fcount; i++) {
+            draw_surface(transforms[obj.faces[i].vertex_index[0] - 1], 
                     transforms[obj.faces[i].vertex_index[1] - 1], 
                     transforms[obj.faces[i].vertex_index[2] - 1],
                     obj.normals[obj.faces[i].normal_index]);
-    }
-
-    // for (;;) {
-    //     switch (keypress()) {
-    //         case 'q':
-    //             destroy_window();
-    //             fclose(fp);
-    //             return 0;
-    //         default: break;
-    //     }
-
-    //     clear_window();
-
-    //     rotation_angle += 0.005;
-
-    //     for (int i = 0; i < vcount; i++) {
-    //         transforms[i] = obj.vertices[i];
-    //         rotate_z(rotation_angle, &transforms[i]);
-    //         // rotate_y(rotation_angle, &transforms[i]);
-    //     }
-
-    //     for (int i = 0; i < fcount; i++) {
-    //         draw_surface(transforms[obj.faces[i].vertex_index[0] - 1], 
-    //                 transforms[obj.faces[i].vertex_index[1] - 1], 
-    //                 transforms[obj.faces[i].vertex_index[2] - 1],
-    //                 obj.normals[obj.faces[i].normal_index]);
-    //     }
+        }
     
-    //     draw_window();
-    // }
+        draw_window();
+    }
 
     // will never be reached but just for sanity's sake
     destroy_window();
