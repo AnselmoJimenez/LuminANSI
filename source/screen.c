@@ -12,12 +12,12 @@
 struct termios original_state;
 
 // disable_raw_mode : restore original terminal settings
-void disable_raw_mode(void) { 
+static void disable_raw_mode(void) { 
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &original_state); 
 }
 
 // enable_raw_mode : sets the terminal into raw mode
-void enable_raw_mode(void) {
+static void enable_raw_mode(void) {
     tcgetattr(STDIN_FILENO, &original_state);   // Current terminal settings
     atexit(disable_raw_mode);   // Register cleanup function to restore settings on exit
 
@@ -30,8 +30,7 @@ void enable_raw_mode(void) {
     tcsetattr(STDIN_FILENO, TCSAFLUSH, &new_state);
 }
 
-// flag if initialization has occurred
-int init = 0;
+int init = 0; // initialization flag
 
 typedef struct {
     int height;
@@ -41,12 +40,11 @@ typedef struct {
 } window_t;
 
 window_t window;
-vertex_t light;
 float focal_length;
 
 #define CHARLIMIT   4
 #define PATTERNSIZE 12
-const char *pattern[] = {
+const char *pattern[PATTERNSIZE] = {
     "\xe2\xa1\x80",  // ⡀
     "\xe2\xa3\x80",  // ⣀
     "\xe2\xa3\x84",  // ⣄
@@ -85,7 +83,6 @@ int init_window(const int height, const int width) {
     }
 
     focal_length = window.width / 2;
-    light = new_vertex(10, 10, -10);
 
     printf(CLEAR_SCREEN);
     printf(HIDE_CURSOR);
@@ -134,12 +131,6 @@ void clear_window(void) {
     printf(CURSOR_HOME);
 }
 
-// intncpy : copy n integer values from src to dest
-static void intncpy(unsigned int *dest, unsigned int *src, unsigned int n) {
-    if (dest == NULL || src == NULL) return;
-    for (; n > 0; --n) *dest++ = *src++;
-}
-
 // normalize : normalize vector v
 static vertex_t normalize(vertex_t v) {
     double magnitude = sqrt(v.x * v.x + v.y * v.y + v.z * v.z);
@@ -156,7 +147,7 @@ static float dot(vertex_t v0, vertex_t v1) {
     return d;
 }
 
-#define CAMERA_Z -5
+#define CAMERA_Z -4
 
 #define MAX(a, b) ((a) > (b)) ? (a) : (b)
 #define MIN(a, b) ((a) < (b)) ? (a) : (b)
@@ -325,11 +316,10 @@ typedef struct intersection {
     pixel_t left, right;
 } intersection_t;
 
-// TODO: Calculate brightness
 // fill_surface: fills in the surface while interpolating z values
 static void fill_surface(intersection_t intersections, int y, float intensity) {
     // light intensity mapping
-    unsigned int index = (unsigned int) (intensity * 100) % (PATTERNSIZE - 1);
+    unsigned int index = (unsigned int) (intensity * 100) % PATTERNSIZE;
     const char *c = pattern[index];
 
     // calculate deltas
@@ -388,7 +378,7 @@ static intersection_t get_intersection(pixel_t endpoints[3], int y) {
 // draw_surface : draws the surface based on the face definition
 void draw_surface(vertex_t v0, vertex_t v1, vertex_t v2, vertex_t vn) {
     // calculate lighting
-    vertex_t light = new_vertex(10, 10, -10);
+    vertex_t light = new_vertex(0, 5, -4);
     vertex_t light_direction = normalize(light);
     vertex_t surface_normal  = normalize(vn);
     float intensity = dot(surface_normal, light_direction);
@@ -406,8 +396,8 @@ void draw_surface(vertex_t v0, vertex_t v1, vertex_t v2, vertex_t vn) {
     edge_t edges[3] = { get_edge(v0, v1), get_edge(v1, v2), get_edge(v0, v2) };
 
     // Find MAX and MIN y value for the current surface
-    unsigned int min_y = MIN(px0.y, MIN(px1.y, px2.y));
-    unsigned int max_y = MAX(px0.y, MAX(px1.y, px2.y));
+    int min_y = MIN(px0.y, MIN(px1.y, px2.y));
+    int max_y = MAX(px0.y, MAX(px1.y, px2.y));
 
     // scan line, find intersections, and fill based on z coordinate
     for (int y = min_y; y <= max_y; y++) {

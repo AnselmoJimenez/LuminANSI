@@ -69,9 +69,9 @@ int main(int argc, char const *argv[]) {
 
         for (int i = 0; i < fcount; i++) {
             draw_surface(transforms[obj.faces[i].vertex_index[0] - 1], 
-                    transforms[obj.faces[i].vertex_index[1] - 1], 
-                    transforms[obj.faces[i].vertex_index[2] - 1],
-                    obj.normals[obj.faces[i].normal_index]);
+                        transforms[obj.faces[i].vertex_index[1] - 1], 
+                        transforms[obj.faces[i].vertex_index[2] - 1],
+                        obj.normals[obj.faces[i].normal_index - 1]);
         }
     
         draw_window();
