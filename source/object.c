@@ -81,6 +81,7 @@ object_t load(FILE *fp) {
 
                 while (*lp != '\n' && *lp != '\0' && *lp != EOF) {
                     face_t new_face;
+                    new_face.normal_index = normal;
                     new_face.vertex_index[0] = subdivrootv;
                     new_face.vertex_index[1] = last_vertex;
                     sscanf(lp, "%d/%*d/%*d", &new_face.vertex_index[2]);

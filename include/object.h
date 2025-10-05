@@ -1,3 +1,5 @@
+typedef struct _IO_FILE FILE;
+
 typedef struct vertex{
     double x;
     double y;
