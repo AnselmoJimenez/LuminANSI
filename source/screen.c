@@ -43,8 +43,9 @@ window_t window;
 float focal_length;
 
 #define CHARLIMIT   4
-#define PATTERNSIZE 12
+#define PATTERNSIZE 13
 const char *pattern[PATTERNSIZE] = {
+    " ",             // empty space
     "\xe2\xa1\x80",  // ⡀
     "\xe2\xa3\x80",  // ⣀
     "\xe2\xa3\x84",  // ⣄
@@ -78,7 +79,7 @@ int init_window(const int height, const int width) {
     // initialize the screen and zbuffer
     for (int i = 0; i < window.height * window.width; i++) {
         window.pixels[i] = malloc(CHARLIMIT * sizeof(char));  // Space + null terminator
-        strcpy(window.pixels[i], " ");
+        strcpy(window.pixels[i], pattern[0]);
         window.zbuffer[i] = FLT_MAX;
     }
 
@@ -125,7 +126,7 @@ void draw_window(void) {
 // clear_window : reset the window pixels
 void clear_window(void) {
     for (int i = 0; i < window.height * window.width; i++) {
-        strcpy(window.pixels[i], " ");
+        strcpy(window.pixels[i], pattern[0]);
         window.zbuffer[i] = FLT_MAX;
     }
     printf(CURSOR_HOME);
@@ -141,13 +142,27 @@ static vertex_t normalize(vertex_t v) {
 
 // dot : calculates the dot product of both vertices
 static float dot(vertex_t v0, vertex_t v1) {
-    float d = (float) (v0.x * v1.x + v0.y * v1.y + v0.z * v1.z);
-    if (d < 0.0) d = 0;
-
-    return d;
+    return (float) (v0.x * v1.x + v0.y * v1.y + v0.z * v1.z);
 }
 
-#define CAMERA_Z -4
+// cross : calculates the cross product of v0 and v1
+static vertex_t cross(vertex_t v0, vertex_t v1) {
+    return new_vertex(
+        (v0.y * v1.z) - (v0.z * v1.y),
+        (v0.z * v1.x) - (v0.x * v1.z),
+        (v0.x * v1.y) - (v0.y * v1.x)
+    );
+}
+
+// vsubtract : subtracts v0 by v1 and returns the resulting vector
+static vertex_t vsubtract(vertex_t v0, vertex_t v1) {
+    return new_vertex(
+        v0.x - v1.x, 
+        v0.y - v1.y, 
+        v0.z - v1.z);
+}
+
+#define CAMERA_Z -8
 
 #define MAX(a, b) ((a) > (b)) ? (a) : (b)
 #define MIN(a, b) ((a) < (b)) ? (a) : (b)
@@ -319,15 +334,15 @@ typedef struct intersection {
 // fill_surface: fills in the surface while interpolating z values
 static void fill_surface(intersection_t intersections, int y, float intensity) {
     // light intensity mapping
-    unsigned int index = (unsigned int) (intensity * 100) % PATTERNSIZE;
-    const char *c = pattern[index];
+    int index = (int) MAX(0, MIN(PATTERNSIZE - 1, intensity * (PATTERNSIZE - 1)));
+    const char *c = pattern[intensity < 0 ? 0 : index];  // Handle backfaces
 
     // calculate deltas
     int dx = intersections.right.x - intersections.left.x;
     float dz = intersections.right.z - intersections.left.z;
     
     // Interpolate through z
-    for (int x = intersections.left.x + 1; x < intersections.right.x; x++) {
+    for (int x = intersections.left.x; x < intersections.right.x; x++) {
         float t = (float) (x - intersections.left.x) / dx;
         float z = intersections.left.z + t * dz;
 
@@ -375,13 +390,21 @@ static intersection_t get_intersection(pixel_t endpoints[3], int y) {
     return result;
 }
 
-// draw_surface : draws the surface based on the face definition
-void draw_surface(vertex_t v0, vertex_t v1, vertex_t v2, vertex_t vn) {
+// get_brightness : calculates the brightness of a surface
+static float get_brightness(vertex_t v0, vertex_t v1, vertex_t v2) {
     // calculate lighting
-    vertex_t light = new_vertex(0, 5, -4);
+    vertex_t light = new_vertex(0.5, 1, -0.5);
     vertex_t light_direction = normalize(light);
-    vertex_t surface_normal  = normalize(vn);
-    float intensity = dot(surface_normal, light_direction);
+    vertex_t surface_normal  = normalize(cross(vsubtract(v1, v0), vsubtract(v2, v0)));
+
+    float ambient_light = 0.1f; // minimum brightness
+    float diffuse = MAX(0, dot(surface_normal, light_direction));
+    return ambient_light + (1.0f - ambient_light) * diffuse;
+}
+
+// draw_surface : draws the surface based on the face definition
+void draw_surface(vertex_t v0, vertex_t v1, vertex_t v2) {
+    float intensity = get_brightness(v0, v1, v2);
 
     // Initialize vertex screen coordinates
     pixel_t px0 = wtopx(v0);
@@ -390,10 +413,10 @@ void draw_surface(vertex_t v0, vertex_t v1, vertex_t v2, vertex_t vn) {
     pixel_t endpoints[3] = { px0, px1, px2 };
 
     // Initialize edges 
-    edge_t e0 = get_edge(v0, v1);
-    edge_t e1 = get_edge(v1, v2);
-    edge_t e2 = get_edge(v0, v2);
-    edge_t edges[3] = { get_edge(v0, v1), get_edge(v1, v2), get_edge(v0, v2) };
+    // edge_t e0 = get_edge(v0, v1);
+    // edge_t e1 = get_edge(v1, v2);
+    // edge_t e2 = get_edge(v0, v2);
+    // edge_t edges[3] = { get_edge(v0, v1), get_edge(v1, v2), get_edge(v0, v2) };
 
     // Find MAX and MIN y value for the current surface
     int min_y = MIN(px0.y, MIN(px1.y, px2.y));
@@ -408,13 +431,13 @@ void draw_surface(vertex_t v0, vertex_t v1, vertex_t v2, vertex_t vn) {
     }
 
     // draw wireframe
-    for (int i = 0; i < 3; i++) {
-        for (int j = 0; j < edges[i].length; j++) {
-            plotpx(edges[i].pixels[j].x, edges[i].pixels[j].y, edges[i].pixels[j].z, pattern[PATTERNSIZE - 1]);
-        }
-    }
+    // for (int i = 0; i < 3; i++) {
+    //     for (int j = 0; j < edges[i].length; j++) {
+    //         plotpx(edges[i].pixels[j].x, edges[i].pixels[j].y, edges[i].pixels[j].z, pattern[PATTERNSIZE - 1]);
+    //     }
+    // }
 
-    free(e0.pixels); e0.pixels = NULL;
-    free(e1.pixels); e1.pixels = NULL;
-    free(e2.pixels); e2.pixels = NULL;
+    // free(e0.pixels); e0.pixels = NULL;
+    // free(e1.pixels); e1.pixels = NULL;
+    // free(e2.pixels); e2.pixels = NULL;
 }

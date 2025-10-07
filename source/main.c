@@ -19,8 +19,8 @@ void print_faces(object_t obj) {
 #endif
 
 int main(int argc, char const *argv[]) {
-    const int height = 450;
-    const int width = 1024;
+    const int height = 480;
+    const int width = 1850;
     double rotation_angle = 0;
     FILE *fp;
 
@@ -58,11 +58,11 @@ int main(int argc, char const *argv[]) {
 
         clear_window();
 
-        rotation_angle += 0.01;
+        rotation_angle += 0.02;
 
         for (int i = 0; i < vcount; i++) {
             transforms[i] = obj.vertices[i];
-            rotate_z(rotation_angle, &transforms[i]);
+            // rotate_z(rotation_angle, &transforms[i]);
             rotate_y(rotation_angle, &transforms[i]);
             // rotate_x(rotation_angle, &transforms[i]);
         }
@@ -70,8 +70,8 @@ int main(int argc, char const *argv[]) {
         for (int i = 0; i < fcount; i++) {
             draw_surface(transforms[obj.faces[i].vertex_index[0] - 1], 
                         transforms[obj.faces[i].vertex_index[1] - 1], 
-                        transforms[obj.faces[i].vertex_index[2] - 1],
-                        obj.normals[obj.faces[i].normal_index - 1]);
+                        transforms[obj.faces[i].vertex_index[2] - 1]
+                    );
         }
     
         draw_window();

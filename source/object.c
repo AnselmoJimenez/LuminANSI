@@ -51,10 +51,6 @@ object_t load(FILE *fp) {
             case 'v':   // vertex data
                 switch (line[1]) {
                     case 'n':   // vertex normals
-                        if (vncount >= MAXVERTICES) break;
-                        sscanf(line, "vn %lf %lf %lf\n", &x, &y, &z);
-                        obj.normals[vncount++] = new_vertex(x, y, z);
-                        break;
                     case 't':   // vertex textures
                         break;
                     default:    // vertex coordinates
@@ -81,7 +77,6 @@ object_t load(FILE *fp) {
 
                 while (*lp != '\n' && *lp != '\0' && *lp != EOF) {
                     face_t new_face;
-                    new_face.normal_index = normal;
                     new_face.vertex_index[0] = subdivrootv;
                     new_face.vertex_index[1] = last_vertex;
                     sscanf(lp, "%d/%*d/%*d", &new_face.vertex_index[2]);

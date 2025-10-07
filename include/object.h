@@ -22,19 +22,16 @@ void rotate_z(double angle, vertex_t *v);
 
 typedef struct face {
     int vertex_index[FACEVERTICES];
-    int normal_index;
 } face_t;
 
-#define MAXVERTICES 1024
+#define MAXVERTICES 4096
 
 typedef struct object {
     vertex_t vertices[MAXVERTICES];
-    vertex_t normals[MAXVERTICES];
     face_t faces[MAXVERTICES * 2];
 } object_t;
 
 extern int vcount;
-extern int vncount;
 extern int fcount;
 
 // load : loads the object file name

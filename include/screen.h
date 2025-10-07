@@ -16,4 +16,4 @@ void draw_window(void);
 void clear_window(void);
 
 // draw_surface : draws the surface based on the face definition
-void draw_surface(vertex_t v0, vertex_t v1, vertex_t v2, vertex_t vn);
+void draw_surface(vertex_t v0, vertex_t v1, vertex_t v2);
