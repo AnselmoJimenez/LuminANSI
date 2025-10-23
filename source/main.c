@@ -19,8 +19,8 @@ void print_faces(object_t obj) {
 #endif
 
 int main(int argc, char const *argv[]) {
-    const int height = 480;
-    const int width = 1850;
+    const int height = 130;
+    const int width = 512;
     double rotation_angle = 0;
     FILE *fp;
 
@@ -41,28 +41,29 @@ int main(int argc, char const *argv[]) {
             printf(USAGE);
             return 1;
     }
-
-    if (init_window(height, width) != 0) return 1;
     
     object_t obj = load(fp);
+    fclose(fp);
+
     vertex_t transforms[MAXVERTICES];
+    if (init_window(height, width) != 0) 
+        return 1;
 
     for (;;) {
         switch (keypress()) {
             case 'q':
                 destroy_window();
-                fclose(fp);
                 return 0;
             default: break;
         }
 
         clear_window();
 
-        rotation_angle += 0.02;
+        rotation_angle += 0.01;
 
         for (int i = 0; i < vcount; i++) {
             transforms[i] = obj.vertices[i];
-            // rotate_z(rotation_angle, &transforms[i]);
+            rotate_z(rotation_angle, &transforms[i]);
             rotate_y(rotation_angle, &transforms[i]);
             // rotate_x(rotation_angle, &transforms[i]);
         }
@@ -79,7 +80,6 @@ int main(int argc, char const *argv[]) {
 
     // will never be reached but just for sanity's sake
     destroy_window();
-    fclose(fp);
 
     return 0;
 }
