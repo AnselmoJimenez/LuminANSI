@@ -1,7 +1,7 @@
 # LuminANSI
 
 <p align=center>
-  <img src="./assets/LuminANSI.png" width="50%" height="50%">
+  <img src="./assets/LuminANSI.png" width="40%" height="40%">
 </p>
 
 > [!NOTE]
@@ -16,10 +16,6 @@ Built entirely from mathematical foundations without relying on OpenGL, DirectX,
 * Lighting
 
 Load any OBJ file and watch it come to life as dynamic ANSI graphics with real-time rotation and dynamic shading.  
-
-Example output with icosphere.obj  
-
-[![icosphere](https://raw.githubusercontent.com/AnselmoJimenez/LuminANSI/main/assets/LuminANSI.png)](https://raw.githubusercontent.com/AnselmoJimenez/LuminANSI/main/assets/icosphere.mp4)
 
 ## Supported Mesh Formats
 
