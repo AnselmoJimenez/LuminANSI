@@ -63,16 +63,16 @@ object_t load(FILE *fp) {
             case 'f':   // face definition
                 char *lp = &line[2];
                 int subdivrootv = 0;
-                int normal = 0;
-                sscanf(lp, "%d/%*d/%d", &subdivrootv, &normal); // vertex subdivision origin
-                for (lp; *lp != ' ' && *lp != '\n'; lp++)
+                sscanf(lp, "%d/%*d/%*d", &subdivrootv); // vertex subdivision origin
+                for ( ; *lp != ' ' && *lp != '\n'; lp++)
                     ;
                 if (*lp == ' ') lp++;
 
                 int last_vertex;
                 sscanf(lp, "%d/%*d/%*d", &last_vertex);
-                for (lp; *lp != ' ' && *lp != '\n'; lp++)
+                for ( ; *lp != ' ' && *lp != '\n'; lp++)
                     ; // skip to next vertex and begin parsing
+
                 if (*lp == ' ') lp++;
 
                 while (*lp != '\n' && *lp != '\0' && *lp != EOF) {
@@ -81,7 +81,7 @@ object_t load(FILE *fp) {
                     new_face.vertex_index[1] = last_vertex;
                     sscanf(lp, "%d/%*d/%*d", &new_face.vertex_index[2]);
 
-                    for (lp; *lp != ' ' && *lp != '\n'; lp++)
+                    for ( ; *lp != ' ' && *lp != '\n'; lp++)
                         ;
                     
                     if (*lp == ' ') lp++;

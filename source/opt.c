@@ -6,14 +6,14 @@
 
 // valid : returns 0 or 1 if character is in string
 int valid(char c, const char *str) {
-    for (*str; *str != '\0'; str++)
+    for ( ; *str != '\0'; str++)
         if (*str == c) return 1;
     return 0;
 }
 
 // continuous : returns 0 or 1 if character has a : after in str
 int continuous(char c, const char *str) {
-    for (*str; *str != '\0' && *str != c; str++)
+    for ( ; *str != '\0' && *str != c; str++)
         ;
     if (*str == '\0') return 0;
     if (*++str == ':') return 1;

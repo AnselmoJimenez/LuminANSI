@@ -78,7 +78,7 @@ int init_window(const int height, const int width) {
     
     // initialize the screen and zbuffer
     for (int i = 0; i < window.height * window.width; i++) {
-        window.pixels[i] = malloc(CHARLIMIT * sizeof(char));  // Space + null terminator
+        window.pixels[i] = (char *) malloc(CHARLIMIT * sizeof(char));  // Space + null terminator
         strcpy(window.pixels[i], pattern[0]);
         window.zbuffer[i] = FLT_MAX;
     }
@@ -209,124 +209,6 @@ static void swap(pixel_t *a, pixel_t *b) {
     *b = temp;
 }
 
-// quicksort : sorts the elements of an array of pixels by the coord flag
-static void quicksort(pixel_t *arr, int low, int high, char coord) {
-    if (low >= high) return;
-    if (coord != 'x' && coord != 'y') return;
-
-    // begin partitioning
-    int pivot = arr[high].y;
-    int i = low - 1;
-
-    for (int j = low; j < high; j++) {
-        if (coord == 'x' && arr[j].x <= pivot) {
-            i++;
-            swap(&arr[i], &arr[j]);
-        }
-        else if (coord == 'y' && arr[j].y <= pivot) {
-            i++;
-            swap(&arr[i], &arr[j]);            
-        }
-    }
-    swap(&arr[i + 1], &arr[high]);
-    ++i;
-
-    quicksort(arr, low, i - 1, coord);
-    quicksort(arr, i + 1, high, coord);
-}
-
-typedef struct edge {
-    pixel_t *pixels;
-    unsigned int length;
-} edge_t;
-
-// bresenham : Draw a line between vertices
-static edge_t get_edge(vertex_t v0, vertex_t v1) {
-    edge_t edge;
-    int maxlength = (window.width > window.height) ? window.width : window.height;
-    edge.pixels = (pixel_t *) malloc(maxlength * sizeof(pixel_t));
-    edge.length = 0;
-
-    // convert both vertexes into pixel coordinates
-    pixel_t px0 = wtopx(v0);
-    pixel_t px1 = wtopx(v1);
-
-    // calculating deltas
-    int dx = abs(px1.x - px0.x);
-    int dy = abs(px1.y - px0.y);
-    int dz = abs(v1.z - v0.z);
-
-    // Determining the direction of the line
-    int xs = (px0.x < px1.x) ? 1 : -1;
-    int ys = (px0.y < px1.y) ? 1 : -1;
-    int zs = (v0.z  < v1.z ) ? 1 : -1;
-
-    int x = (int) px0.x;
-    int y = (int) px0.y;
-    double z = v0.z;
-    
-    if (dx >= dy && dx >= dz) { // X is the driving axis
-        int p0 = 2 * dy - dx;
-        int p1 = (int) (2 * dz - dx);
-        for (int i = 0; i < dx + 1; i++) {
-            edge.pixels[edge.length++]  = new_pixel(x, y, (float) z);
-            if (p0 >= 0) {
-                y += ys;
-                p0 -= 2 * dx;
-            }
-            if (p1 >= 0) {
-                z += zs;
-                p1 -= 2 * dx;
-            }
-            p0 += 2 * dy;
-            p1 += 2 * dz;
-            x += xs;
-        }
-    }
-    else if (dy >= dx && dy >= dz) { // Y is the driving axis
-        int p0 = 2 * dx - dy;
-        int p1 = (int) (2 * dz - dy);
-        for (int i = 0; i < dy + 1; i++) {
-            edge.pixels[edge.length++]  = new_pixel(x, y, (float) z);
-            if (p0 >= 0) {
-                x += xs;
-                p0 -= 2 * dy;
-            }
-            if (p1 >= 0) {
-                z += zs;
-                p1 -= 2 * dy;
-            }
-            p0 += 2 * dx;
-            p1 += 2 * dz;
-            y += ys;
-        }
-    }
-    else if (dz >= dx && dz >= dy) { // Z is the driving axis
-        int p0 = (int) (2 * dy - dz);
-        int p1 = (int) (2 * dx - dz);
-        for (int i = 0; i < dz + 1; i++) {
-            edge.pixels[edge.length++] = new_pixel(x, y, (float) z);
-            if (p0 >= 0) {
-                y += ys;
-                p0 -= 2 * dz;
-            }
-            if (p1 >= 0) {
-                x += xs;
-                p1 -= 2 * dz;
-            }
-            p0 += 2 * dy;
-            p1 += 2 * dx;
-            z += zs;
-        }
-    }
-
-    // resize the array holding the pixels and sort them by y value before returning
-    edge.pixels = (pixel_t *) realloc(edge.pixels, edge.length * sizeof(pixel_t));
-    quicksort(edge.pixels, 0, edge.length - 1, 'y');
-
-    return edge;
-}
-
 typedef struct intersection {
     pixel_t left, right;
 } intersection_t;
@@ -353,7 +235,7 @@ static void fill_surface(intersection_t intersections, int y, float intensity) {
 // get_intersection: Obtains the intersection at a scanline given the parameter edges
 static intersection_t get_intersection(pixel_t endpoints[3], int y) {
     intersection_t result;
-    pixel_t hits[2];
+    pixel_t hits[2] = {0};
     unsigned int count = 0;
 
     // Check each of the 3 edges
@@ -412,12 +294,6 @@ void draw_surface(vertex_t v0, vertex_t v1, vertex_t v2) {
     pixel_t px2 = wtopx(v2);
     pixel_t endpoints[3] = { px0, px1, px2 };
 
-    // Initialize edges 
-    // edge_t e0 = get_edge(v0, v1);
-    // edge_t e1 = get_edge(v1, v2);
-    // edge_t e2 = get_edge(v0, v2);
-    // edge_t edges[3] = { get_edge(v0, v1), get_edge(v1, v2), get_edge(v0, v2) };
-
     // Find MAX and MIN y value for the current surface
     int min_y = MIN(px0.y, MIN(px1.y, px2.y));
     int max_y = MAX(px0.y, MAX(px1.y, px2.y));
@@ -429,15 +305,4 @@ void draw_surface(vertex_t v0, vertex_t v1, vertex_t v2) {
         // then fill scanline with pixel coordinates
         fill_surface(intersect, y, intensity);
     }
-
-    // draw wireframe
-    // for (int i = 0; i < 3; i++) {
-    //     for (int j = 0; j < edges[i].length; j++) {
-    //         plotpx(edges[i].pixels[j].x, edges[i].pixels[j].y, edges[i].pixels[j].z, pattern[PATTERNSIZE - 1]);
-    //     }
-    // }
-
-    // free(e0.pixels); e0.pixels = NULL;
-    // free(e1.pixels); e1.pixels = NULL;
-    // free(e2.pixels); e2.pixels = NULL;
 }
