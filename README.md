@@ -58,6 +58,11 @@ To run the program:
 ```
 
 To learn more about options, use the `-h` option
+
 ```bash
 ./LuminANSI -h
 ```
+
+## ToDo
+
+* Multithreading
