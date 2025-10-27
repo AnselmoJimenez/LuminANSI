@@ -1,8 +1,8 @@
 # Program Variables
-PROGNAME = LuminANSI
-SOURCE_DIR = ./source
-INCLUDE_DIR = ./include
-BUILD_DIR = ./build
+PROGNAME := LuminANSI
+SOURCE_DIR := ./source
+INCLUDE_DIR := ./include
+BUILD_DIR := ./build
 
 # Compilation Variables
 CC := gcc
@@ -10,8 +10,8 @@ CFLAGS := -Wall
 LDFLAGS := -lm
 
 # Create all corresponding .o files from .c filenames
-SOURCES = $(wildcard $(SOURCE_DIR)/*.c)
-OBJECTS = $(patsubst $(SOURCE_DIR)/%.c, $(BUILD_DIR)/%.o, $(SOURCES))
+SOURCES := $(wildcard $(SOURCE_DIR)/*.c)
+OBJECTS := $(patsubst $(SOURCE_DIR)/%.c, $(BUILD_DIR)/%.o, $(SOURCES))
 
 .PHONY: all clean debug
 
