@@ -2,7 +2,11 @@
 
 #define USAGE "usage:\n" \
 "\th : displays this message\n" \
-"\tf [file path] : path to object file\n"
+"\tx : Enables x rotation\n" \
+"\ty : Enables y rotation\n" \
+"\tz : Enables z rotation\n" \
+"\tf [file path] : path to object file\n" \
+"\td [HEIGHTxWIDTH] : overwrite screen resolution\n"
 
 extern char *optarg; // pointer to the option's argument (when option takes an argument)
 extern int optind;   // index of next element in argv to process
