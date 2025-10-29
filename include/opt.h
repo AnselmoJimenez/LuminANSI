@@ -1,5 +1,8 @@
 /* opt.h : My version of getopt */
 
+#ifndef OPT_H
+#define OPT_H
+
 #define USAGE "usage:\n" \
 "\th : displays this message\n" \
 "\tx : Enables x rotation\n" \
@@ -15,3 +18,5 @@ extern char opterrc; // contains the flag character when an error occurs
 
 // getoption : returns current option or -1 if none left
 int getopt(int argc, const char **argv, const char *argoptions);
+
+#endif

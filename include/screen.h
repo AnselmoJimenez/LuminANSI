@@ -1,19 +1,21 @@
-typedef struct vertex vertex_t;
+#ifndef SCREEN_H
+#define SCREEN_H
 
-// init_window : initialize a window of size height and width
-int init_window(const int height, const int width);
+typedef struct screen screen_t;
 
-// destroy_window: free the memory contained in the window
-void destroy_window(void);
+// init_screen : initialize a window of size height and width
+screen_t *init_screen(const int height, const int width);
+
+// destroy_screen: free the memory contained in the window
+void destroy_screen(screen_t *screen);
+
+// draw_screen : draw the buffer of characters
+void draw_screen(screen_t *screen);
+
+// clear_screen : reset the window pixels
+void clear_screen(screen_t *screen);
 
 // keypress : returns keypress or -1 if no key was pressed
 int keypress(void);
 
-// draw_window : draw the buffer of characters
-void draw_window(void);
-
-// clear_window : reset the window pixels
-void clear_window(void);
-
-// draw_surface : draws the surface based on the face definition
-void draw_surface(vertex_t v0, vertex_t v1, vertex_t v2);
+#endif

@@ -3,6 +3,7 @@
 #include "../include/object.h"
 #include "../include/screen.h"
 #include "../include/opt.h"
+#include "../include/graphics.h"
 
 #define DEBUG
 #ifdef DEBUG
@@ -71,21 +72,22 @@ int main(int argc, char const *argv[]) {
     object_t obj = load(fp);
     fclose(fp);
 
+    screen_t *screen = init_screen(height, width);
     vertex_t transforms[MAXVERTICES];
-    if (init_window(height, width) != 0) 
+    if (screen == NULL) 
         return 1;
 
     for (;;) {
         switch (keypress()) {
             case 'q':
-                destroy_window();
+                destroy_screen(screen);
                 return 0;
             default: break;
         }
 
-        clear_window();
+        clear_screen(screen);
 
-        rotation_angle += 0.005;
+        rotation_angle += 0.02;
 
         for (int i = 0; i < vcount; i++) {
             transforms[i] = obj.vertices[i];
@@ -95,17 +97,19 @@ int main(int argc, char const *argv[]) {
         }
 
         for (int i = 0; i < fcount; i++) {
-            draw_surface(transforms[obj.faces[i].vertex_index[0] - 1], 
-                        transforms[obj.faces[i].vertex_index[1] - 1], 
-                        transforms[obj.faces[i].vertex_index[2] - 1]
-                    );
+            surface_t surface = new_surface(
+                transforms[obj.faces[i].vertex_index[0] - 1], 
+                transforms[obj.faces[i].vertex_index[1] - 1], 
+                transforms[obj.faces[i].vertex_index[2] - 1]
+            );
+            draw_surface(screen, surface);
         }
     
-        draw_window();
+        draw_screen(screen);
     }
 
     // will never be reached but just for sanity's sake
-    destroy_window();
+    destroy_screen(screen);
 
     return 0;
 }

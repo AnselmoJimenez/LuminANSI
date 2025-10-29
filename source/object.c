@@ -11,6 +11,11 @@ vertex_t new_vertex(double x, double y, double z) {
     return (vertex_t) { x, y, z };
 }
 
+// new_surface : Create and return a new surface object
+surface_t new_surface(vertex_t v0, vertex_t v1, vertex_t v2) {
+    return (surface_t) { v0, v1, v2 };
+}
+
 // rotate_x : rotate the vertex coordinate by angle in the x direction about c
 void rotate_x(double angle, vertex_t *v) {
     double y1 = v->y;

@@ -1,3 +1,6 @@
+#ifndef OBJECT_H
+#define OBJECT_H
+
 typedef struct _IO_FILE FILE;
 
 typedef struct vertex{
@@ -6,8 +9,17 @@ typedef struct vertex{
     double z;
 } vertex_t;
 
+typedef struct surface {
+    vertex_t v0;
+    vertex_t v1;
+    vertex_t v2;
+} surface_t;
+
 // new_vertex : create and return a new vertex object
 vertex_t new_vertex(double x, double y, double z);
+
+// new_surface : Create and return a new surface object
+surface_t new_surface(vertex_t v0, vertex_t v1, vertex_t v2);
 
 // rotate_x : rotate the vertex coordinate by angle in the x direction
 void rotate_x(double angle, vertex_t *v);
@@ -36,3 +48,5 @@ extern int fcount;
 
 // load : loads the object file name
 object_t load(FILE *fp);
+
+#endif
