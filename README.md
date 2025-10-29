@@ -63,6 +63,8 @@ To learn more about options, use the `-h` option
 ./LuminANSI -h
 ```
 
+To quit the program, press `q` at any time
+
 ## ToDo
 
 * Multithreading
