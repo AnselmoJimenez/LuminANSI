@@ -6,7 +6,7 @@ BUILD_DIR := ./build
 
 # Compilation Variables
 CC := gcc
-CFLAGS := -Wall
+CFLAGS := -Wall -Wextra
 LDFLAGS := -lm
 
 # Create all corresponding .o files from .c filenames
@@ -17,7 +17,7 @@ OBJECTS := $(patsubst $(SOURCE_DIR)/%.c, $(BUILD_DIR)/%.o, $(SOURCES))
 
 all: $(PROGNAME)
 
-debug: CFLAGS := -Wall -g
+debug: CFLAGS := -Wall -Wextra -g
 debug: $(PROGNAME)
 
 # Link all the object files into the final program
