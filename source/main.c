@@ -74,8 +74,10 @@ int main(int argc, char const *argv[]) {
 
     screen_t *screen = init_screen(height, width);
     vertex_t transforms[MAXVERTICES];
-    if (screen == NULL) 
+    if (screen == NULL) {
+        printf("LuminANSI: Unable to allocate screen\n");
         return 1;
+    }
 
     for (;;) {
         switch (keypress()) {

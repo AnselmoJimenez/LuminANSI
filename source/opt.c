@@ -32,7 +32,7 @@ int getopt(int argc, const char **argv, const char *argoptions) {
     optarg = NULL;
 
     char option = 0;
-    while (argv[optind]) {
+    while (optind < argc && argv[optind]) {
         option = (*(argv + optind))[0] == '-' ? (*(argv + optind))[1] : 0;
 
         // Check if valid option

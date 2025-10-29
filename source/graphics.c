@@ -75,7 +75,7 @@ typedef struct intersection {
 } intersection_t;
 
 // fill_surface: fills in the surface while interpolating z values
-static void fill_surface(screen_t *screen, intersection_t intersections, int y, float intensity) {
+static void fill_surface(screen_t *screen, intersection_t intersections, int y) {
     // calculate deltas
     int dx = intersections.right.x - intersections.left.x;
     float dz = intersections.right.z - intersections.left.z;
@@ -163,6 +163,6 @@ void draw_surface(screen_t *screen, surface_t surface) {
         intersection_t intersect = get_intersection(endpoints, y);
 
         // then fill scanline with pixel coordinates
-        fill_surface(screen, intersect, y, intensity);
+        fill_surface(screen, intersect, y);
     }
 }
