@@ -1,7 +1,7 @@
 #ifndef UTIL_H
 #define UTIL_H
 
-#define INFINITY 2147483647
+#define INFINITE 2147483647
 
 typedef struct vertex vertex_t;
 

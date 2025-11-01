@@ -1,8 +1,9 @@
 #include <string.h>
+#include <math.h>
 
 #include "../include/graphics.h"
 #include "../include/util.h"
-#include "../include/object.h"
+#include "../include/mesh.h"
 
 static const char *pattern[PATTERNSIZE] = {
     "\x1b[38;5;232m█\x1b[0m",  // 1  - Darkest
@@ -143,15 +144,20 @@ static float get_brightness(surface_t surface) {
 }
 
 // draw_surface : draws the surface based on the face definition
-void draw_surface(screen_t *screen, surface_t surface) {
-    float intensity = get_brightness(surface);
+void draw_surface(screen_t *screen, const surface_t surface, float theta) {
+    surface_t transform;
+    memcpy(&transform, &surface, sizeof(surface_t));
+    roll(theta, &transform);
+    pitch(theta, &transform);
+
+    float intensity = get_brightness(transform);
     int index = (int) MAX(0, MIN(PATTERNSIZE - 1, intensity * (PATTERNSIZE - 1)));
     char *c = (char *) pattern[intensity < 0 ? 0 : index];  // Handle backfaces
 
     // Initialize vertex screen coordinates
-    pixel_t px0 = wtopx(screen, surface.v0, c);
-    pixel_t px1 = wtopx(screen, surface.v1, c);
-    pixel_t px2 = wtopx(screen, surface.v2, c);
+    pixel_t px0 = wtopx(screen, transform.v0, c);
+    pixel_t px1 = wtopx(screen, transform.v1, c);
+    pixel_t px2 = wtopx(screen, transform.v2, c);
     pixel_t endpoints[3] = { px0, px1, px2 };
 
     // Find MAX and MIN y value for the current surface

@@ -22,6 +22,6 @@ typedef struct screen {
 typedef struct surface surface_t;
 
 // draw_surface : draws the surface based on the face definition
-void draw_surface(screen_t *window, surface_t surface);
+void draw_surface(screen_t *window, surface_t surface, float rotation_angle);
 
 #endif

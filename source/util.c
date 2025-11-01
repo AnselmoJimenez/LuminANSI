@@ -1,6 +1,6 @@
 #include <math.h>
 
-#include "../include/object.h"
+#include "../include/mesh.h"
 
 // normalize : normalize vector v
 vertex_t normalize(vertex_t v) {

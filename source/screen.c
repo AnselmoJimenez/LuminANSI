@@ -6,7 +6,7 @@
 #include <float.h>
 
 #include "../include/graphics.h"
-#include "../include/object.h"
+#include "../include/mesh.h"
 #include "../include/screen.h"
 #include "../include/util.h"
 
@@ -55,8 +55,8 @@ screen_t *init_screen(const int height, const int width) {
     
     // initialize the screen
     for (int i = 0; i < screen->height * screen->width; i++) {
-        screen->pixels[i].x = INFINITY;
-        screen->pixels[i].y = INFINITY;
+        screen->pixels[i].x = INFINITE;
+        screen->pixels[i].y = INFINITE;
         screen->pixels[i].z = FLT_MAX;
         strncpy(screen->pixels[i].c, " ", STRINGSIZE);
     }
@@ -91,8 +91,8 @@ void draw_screen(screen_t *screen) {
 // clear_screen : reset the window pixels
 void clear_screen(screen_t *screen) {
     for (int i = 0; i < screen->height * screen->width; i++) {
-        screen->pixels[i].x = INFINITY;
-        screen->pixels[i].y = INFINITY;
+        screen->pixels[i].x = INFINITE;
+        screen->pixels[i].y = INFINITE;
         screen->pixels[i].z = FLT_MAX;
         strncpy(screen->pixels[i].c, " ", STRINGSIZE);
     }
