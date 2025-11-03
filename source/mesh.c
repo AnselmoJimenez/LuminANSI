@@ -50,9 +50,9 @@ void yaw(float angle, surface_t *surface) {
 #define MAXSTRINGLEN 512    
 
 // parse_stl : parse STL (.stl) file formats
-static void parse_stl(FILE *fp, mesh_t *mesh) {
-    // TODO: Implement STL file parsing
-}
+// static void parse_stl(FILE *fp, mesh_t *mesh) {
+//     // TODO: Implement STL file parsing
+// }
 
 // advance : advance the line pointer to the next face definition
 static void advance(char **lp) {
@@ -77,7 +77,7 @@ static void parse_wavefront(FILE *fp, mesh_t *mesh) {
             break;
 
             case 'f':
-                if (mesh->fcount >= EULERSPOLYHEDRA) {
+                if (mesh->sfcount >= EULERSPOLYHEDRA) {
                     printf("LuminANSI: Surface Count Limit Reached\n");
                     break;
                 }
@@ -91,19 +91,19 @@ static void parse_wavefront(FILE *fp, mesh_t *mesh) {
                 advance(&lp);
 
                 while (*lp != '\n' && *lp != '\0' && *lp != EOF) {
-                    if (mesh->fcount >= EULERSPOLYHEDRA) {
+                    if (mesh->sfcount >= EULERSPOLYHEDRA) {
                         printf("LuminANSI: Surface Count Limit Reached\n");
                         break;
                     }
-                    mesh->surfaces[mesh->fcount].v0 = mesh->vertices[root_v - 1];
-                    mesh->surfaces[mesh->fcount].v1 = mesh->vertices[last_v - 1];
+                    mesh->surfaces[mesh->sfcount].v0 = mesh->vertices[root_v - 1];
+                    mesh->surfaces[mesh->sfcount].v1 = mesh->vertices[last_v - 1];
 
                     sscanf(lp, "%d/%*s", &last_v);
-                    mesh->surfaces[mesh->fcount].v2 = mesh->vertices[last_v - 1];
+                    mesh->surfaces[mesh->sfcount].v2 = mesh->vertices[last_v - 1];
                     advance(&lp);
                     
-                    if (mesh->fcount < EULERSPOLYHEDRA) {
-                        ++mesh->fcount;
+                    if (mesh->sfcount < EULERSPOLYHEDRA) {
+                        ++mesh->sfcount;
                     }
                 }
             break;
@@ -114,12 +114,21 @@ static void parse_wavefront(FILE *fp, mesh_t *mesh) {
 }
 
 // load : loads the object file name
-mesh_t load(const char *filename, FILE *fp) {
+mesh_t load(const char *filename) {
     mesh_t mesh;
-    mesh.fcount = 0;
+    mesh.sfcount = 0;
     mesh.vcount = 0;
-    if      (strstr(filename, ".obj\0")) parse_wavefront(fp, &mesh);
-    else if (strstr(filename, ".stl\0")) parse_stl(fp, &mesh);
 
+    FILE *fp;
+    if ((fp = fopen(filename, "r")) == NULL) {
+        printf("Unable to open %s\n", filename);
+        return mesh;
+    }
+
+    if      (strstr(filename, ".obj\0")) parse_wavefront(fp, &mesh);
+    // else if (strstr(filename, ".stl\0")) parse_stl(fp, &mesh);
+
+    fclose(fp);
+    
     return mesh;
 }
