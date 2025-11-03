@@ -32,12 +32,12 @@ void yaw(float angle, surface_t *surface);
 
 typedef struct mesh {
     int vcount;
-    int fcount;
+    int sfcount;
     vertex_t vertices[MAXVERTICES];
     surface_t surfaces[EULERSPOLYHEDRA];
 } mesh_t;
 
 // load : loads the object file name
-mesh_t load(const char *filename, FILE *fp);
+mesh_t load(const char *filename);
 
 #endif

@@ -20,8 +20,9 @@ typedef struct screen {
 } screen_t;
 
 typedef struct surface surface_t;
+typedef struct mesh mesh_t;
 
-// draw_surface : draws the surface based on the face definition
-void draw_surface(screen_t *window, surface_t surface, float rotation_angle);
+// render : main rendering loop
+int render(screen_t *screen, const mesh_t mesh);
 
 #endif
