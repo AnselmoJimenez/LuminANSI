@@ -28,7 +28,7 @@ int opterr = 1;
 char opterrc = 0;
 
 // getopt : returns current option or -1 if none left
-int getopt(int argc, const char **argv, const char *argoptions) {
+static int getopt(int argc, const char **argv, const char *argoptions) {
     optarg = NULL;
 
     char option = 0;
@@ -50,4 +50,43 @@ int getopt(int argc, const char **argv, const char *argoptions) {
     }
 
     return -1;
+}
+
+// argparse : parse the command line arguments
+int argparse(int argc, const char **argv, char **filename, int *height, int *width) {
+    int option = 0;
+    while ((option = getopt(argc, argv, OPTIONS)) != -1) {
+        switch (option) {
+            case 'f':
+                if (optarg == NULL) {
+                    printf(USAGE);
+                    return -1;
+                }
+                *filename = optarg;
+                break;
+            case 'd':
+                int temp_height = 0;
+                int temp_width = 0;
+                if (optarg == NULL || sscanf(optarg, "%dx%d", &temp_height, &temp_width) != 2) {
+                    printf(USAGE);
+                    return -1;
+                }
+                if (temp_height < 0 || temp_width < 0) {
+                    printf("LuminANSI: Negative dimensions not allowed\n");
+                    return -1;
+                }
+                else if ((0 < temp_height && temp_height < 128) || (0 < temp_width && temp_width < 512)) {
+                    printf("LuminANSI: Screen defaulting to 128x512\n");
+                    break;
+                }
+                *width = temp_width;
+                *height = temp_height;
+                break;
+            case 'h':
+            default:
+                printf(USAGE);
+                return -1;
+        }
+    }
+    return 0;
 }
