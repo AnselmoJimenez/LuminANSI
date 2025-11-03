@@ -4,6 +4,7 @@
 #include "../include/graphics.h"
 #include "../include/util.h"
 #include "../include/mesh.h"
+#include "../include/screen.h"
 
 static const char *pattern[PATTERNSIZE] = {
     "\x1b[38;5;232m█\x1b[0m",  // 1  - Darkest
@@ -144,7 +145,7 @@ static float get_brightness(surface_t surface) {
 }
 
 // draw_surface : draws the surface based on the face definition
-void draw_surface(screen_t *screen, const surface_t surface, float theta) {
+static void draw_surface(screen_t *screen, const surface_t surface, float theta) {
     surface_t transform;
     memcpy(&transform, &surface, sizeof(surface_t));
     roll(theta, &transform);
@@ -170,5 +171,26 @@ void draw_surface(screen_t *screen, const surface_t surface, float theta) {
 
         // then fill scanline with pixel coordinates
         fill_surface(screen, intersect, y);
+    }
+}
+
+// render : main rendering loop
+int render(screen_t *screen, const mesh_t mesh) {
+    float rotation_angle = 0;
+
+    for (;;) {
+        switch (keypress()) {
+            case 'q':
+                return 0;
+            default: break;
+        }
+
+        clear_screen(screen);      
+
+        rotation_angle += 0.01;
+        for (int i = 0; i < mesh.sfcount; i++)
+            draw_surface(screen, mesh.surfaces[i], rotation_angle);
+    
+        draw_screen(screen);
     }
 }
