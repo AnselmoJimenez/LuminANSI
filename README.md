@@ -70,6 +70,7 @@ To quit the program, press `q` at any time
 * Multithreading
 
 ## Contributions
+
 **This project is not accepting contributions.**  
 This is a personal project that I am maintaining on my own. Pull requests, merge requests, and issues will not be reviewed or addressed.  
 Thank you for your interest.
