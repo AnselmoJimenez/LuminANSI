@@ -3,6 +3,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <math.h>
+#include <stdint.h>
 
 #include "../include/mesh.h"
 #include "../include/screen.h"
@@ -45,14 +46,46 @@ void yaw(float angle, surface_t *surface) {
         vertices[i]->x = x * cos(angle) - y * sin(angle);
         vertices[i]->y = x * sin(angle) + y * cos(angle);
     }
+} 
+
+#define HEADERSIZE      80
+#define TRIANGLESPEC    36
+#define NORMALSIZE      12
+#define ATTRSIZE        2
+
+// TODO: Implement check for big endian systems
+// parse_stl : parse STL (.stl) file formats
+static void parse_stl(FILE *fp, mesh_t *mesh) {
+    // skip 80 byte header
+    if (fseek(fp, HEADERSIZE, SEEK_SET) == -1) {
+        printf("Error reading file");
+        return; 
+    }
+
+    // read the number of triangles in the mesh
+    fread(&mesh->sfcount, sizeof(int), 1, fp);
+    if (mesh->sfcount > EULERSPOLYHEDRA) {
+        printf("Too many surfaces. Aborting\n");
+        return;
+    }
+    
+    // loop and parse all of the triangle data
+    for (int i = 0; i < mesh->sfcount; i++) {
+        if (fseek(fp, NORMALSIZE, SEEK_CUR) == -1) {
+            printf("Error reading file");
+            return; 
+        }
+
+        fread(&mesh->surfaces[i], sizeof(surface_t), 1, fp);
+
+        if (fseek(fp, ATTRSIZE, SEEK_CUR) == -1) {
+            printf("Error reading file");
+            return; 
+        }
+    }
 }
 
-#define MAXSTRINGLEN 512    
-
-// parse_stl : parse STL (.stl) file formats
-// static void parse_stl(FILE *fp, mesh_t *mesh) {
-//     // TODO: Implement STL file parsing
-// }
+#define MAXSTRINGLEN 512   
 
 // advance : advance the line pointer to the next face definition
 static void advance(char **lp) {
@@ -126,7 +159,7 @@ mesh_t load(const char *filename) {
     }
 
     if      (strstr(filename, ".obj\0")) parse_wavefront(fp, &mesh);
-    // else if (strstr(filename, ".stl\0")) parse_stl(fp, &mesh);
+    else if (strstr(filename, ".stl\0")) parse_stl(fp, &mesh);
 
     fclose(fp);
     

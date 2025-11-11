@@ -3,7 +3,7 @@
 
 typedef struct _IO_FILE FILE;
 
-typedef struct vertex{
+typedef struct vertex {
     float x;
     float y;
     float z;

@@ -15,7 +15,7 @@ Built entirely from mathematical foundations without relying on OpenGL, DirectX,
 * Depth Buffering
 * Lighting
 
-Load any OBJ file and watch it come to life as dynamic ANSI graphics with real-time rotation and dynamic shading.  
+Load any supported 3D Mesh file and watch it come to life as dynamic ANSI graphics with real-time rotation and dynamic shading.  
 
 ## Dependencies
 
@@ -28,7 +28,8 @@ WSL is also supported
 
 ### Supported Mesh Formats
 
-* obj
+* wavefront
+* stl
 
 Support for more mesh file formats to be added in future implementations.
 
@@ -67,7 +68,7 @@ To quit the program, press `q` at any time
 
 ## ToDo
 
-* Multithreading
+* Multithreading optimizations
 
 ## Contributions
 
