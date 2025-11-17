@@ -48,6 +48,25 @@ void yaw(float angle, surface_t *surface) {
     }
 } 
 
+#define MAXLINESIZE 256
+
+// parse_ply : parse Stanford PLY (.ply) file formats
+// static void parse_ply(FILE *fp, mesh_t *mesh) {
+//     char characters[MAXLINESIZE] = { '\0' };
+
+//     // Read the PLY header text
+//     while (!strstr(characters, "end_header\0")) {
+//         char *cp = &characters[0];
+//         do {
+//             fread(cp, sizeof(uint8_t), 1, fp);
+//         } while (*cp++ != '\n');
+//         if (*--cp == '\n') *cp = '\0';
+
+//         // TODO: Need to parse the binary data
+//         sscanf(characters, "element face %d", &mesh->sfcount);
+//     }
+// }
+
 #define HEADERSIZE      80
 #define TRIANGLESPEC    36
 #define NORMALSIZE      12
@@ -160,6 +179,7 @@ mesh_t load(const char *filename) {
 
     if      (strstr(filename, ".obj\0")) parse_wavefront(fp, &mesh);
     else if (strstr(filename, ".stl\0")) parse_stl(fp, &mesh);
+    // else if (strstr(filename, ".ply\0")) parse_ply(fp, &mesh);
 
     fclose(fp);
     
