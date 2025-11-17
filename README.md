@@ -69,6 +69,7 @@ To quit the program, press `q` at any time
 ## ToDo
 
 * Multithreading optimizations
+* Support for Stanford PLY file formats
 
 ## Contributions
 
