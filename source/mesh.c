@@ -7,6 +7,7 @@
 
 #include "../include/mesh.h"
 #include "../include/screen.h"
+#include "../include/log.h"
 
 // new_vertex : create and return a new vertex object
 vertex_t new_vertex(float x, float y, float z) { 
@@ -173,13 +174,20 @@ mesh_t load(const char *filename) {
 
     FILE *fp;
     if ((fp = fopen(filename, "r")) == NULL) {
+        log_message(ERROR, "Unable to open %s", filename);
         printf("Unable to open %s\n", filename);
         return mesh;
     }
 
-    if      (strstr(filename, ".obj\0")) parse_wavefront(fp, &mesh);
-    else if (strstr(filename, ".stl\0")) parse_stl(fp, &mesh);
-    // else if (strstr(filename, ".ply\0")) parse_ply(fp, &mesh);
+    if (strstr(filename, ".obj\0")) {
+        log_message(INFO, "Wavefront data format detected.");
+        parse_wavefront(fp, &mesh);
+    }
+    else if (strstr(filename, ".stl\0")) {
+        log_message(INFO, "STL data format detected.");
+        parse_stl(fp, &mesh);
+    }
+    // else if (strstr(filename, ".ply\0")) { parse_ply(fp, &mesh); }
 
     fclose(fp);
     

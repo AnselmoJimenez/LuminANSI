@@ -5,6 +5,7 @@
 #include "../include/util.h"
 #include "../include/mesh.h"
 #include "../include/screen.h"
+#include "../include/log.h"
 
 static const char *pattern[PATTERNSIZE] = {
     "\x1b[38;5;232m█\x1b[0m",  // 1  - Darkest
@@ -178,14 +179,16 @@ static void draw_surface(screen_t *screen, const surface_t surface, float theta)
 int render(screen_t *screen, const mesh_t mesh) {
     float rotation_angle = 0;
 
+    log_message(INFO, "rendering %d surfaces", mesh.sfcount);
     for (;;) {
         switch (keypress()) {
             case 'q':
+                log_message(INFO, "q keypress detected");
                 return 0;
             default: break;
         }
 
-        clear_screen(screen);      
+        clear_screen(screen);
 
         rotation_angle += 0.01;
         for (int i = 0; i < mesh.sfcount; i++)
