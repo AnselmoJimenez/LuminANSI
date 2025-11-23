@@ -1,3 +1,9 @@
+# Executables
 LuminANSI
+
+# Folders
 .vscode/
 build/
+
+# Logging
+*.log
