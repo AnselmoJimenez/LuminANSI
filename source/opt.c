@@ -3,6 +3,7 @@
 #include <string.h>
 
 #include "../include/opt.h"
+#include "../include/log.h"
 
 // valid : returns 0 or 1 if character is in string
 int valid(char c, const char *str) {
@@ -54,6 +55,8 @@ static int getopt(int argc, const char **argv, const char *argoptions) {
 
 // argparse : parse the command line arguments
 int argparse(int argc, const char **argv, char **filename, int *height, int *width) {
+    log_message(INFO, "Initializing LuminANSI");
+
     int option = 0;
     while ((option = getopt(argc, argv, OPTIONS)) != -1) {
         switch (option) {
@@ -69,14 +72,17 @@ int argparse(int argc, const char **argv, char **filename, int *height, int *wid
                 int temp_width = 0;
                 if (optarg == NULL || sscanf(optarg, "%dx%d", &temp_height, &temp_width) != 2) {
                     printf(USAGE);
-                    return -1;
+                    log_message(ERROR, "LuminANSI: Unable to parse command line arguments");
+                    return 0;
                 }
                 if (temp_height < 0 || temp_width < 0) {
                     printf("LuminANSI: Negative dimensions not allowed\n");
-                    return -1;
+                    log_message(ERROR, "LuminANSI: Negative dimensions not allowed\n");
+                    return 0;
                 }
                 else if ((0 < temp_height && temp_height < 128) || (0 < temp_width && temp_width < 512)) {
                     printf("LuminANSI: Screen defaulting to 128x512\n");
+                    log_message(INFO, "LuminANSI: Screen defaulting to 128x512\n");
                     break;
                 }
                 *width = temp_width;
@@ -85,8 +91,9 @@ int argparse(int argc, const char **argv, char **filename, int *height, int *wid
             case 'h':
             default:
                 printf(USAGE);
-                return -1;
+                log_message(ERROR, "LuminANSI: Unable to parse command line arguments");
+                return 0;
         }
     }
-    return 0;
+    return 1;
 }

@@ -16,9 +16,10 @@ static FILE *log;
 int init_log(const char *filename) {
     log = fopen(filename, "w");
     if (log == NULL) {
-        return 1;
+        printf("Unable to initialize logging system", filename);
+        return 0;
     }
-    return 0;
+    return 1;
 }
 
 // close_log : closes the log file pointer

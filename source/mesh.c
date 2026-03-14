@@ -172,6 +172,8 @@ mesh_t load(const char *filename) {
     mesh.sfcount = 0;
     mesh.vcount = 0;
 
+    log_message(INFO, "Reading %s mesh data...", filename);
+
     FILE *fp;
     if ((fp = fopen(filename, "r")) == NULL) {
         log_message(ERROR, "Unable to open %s", filename);
@@ -188,6 +190,10 @@ mesh_t load(const char *filename) {
         parse_stl(fp, &mesh);
     }
     // else if (strstr(filename, ".ply\0")) { parse_ply(fp, &mesh); }
+
+    log_message(INFO, "%s mesh data parsing complete.", filename);
+    log_message(INFO, "\t%d vertices", mesh.vcount);
+    log_message(INFO, "\t%d surfaces", mesh.sfcount);
 
     fclose(fp);
     

@@ -9,6 +9,7 @@
 #include "../include/mesh.h"
 #include "../include/screen.h"
 #include "../include/util.h"
+#include "../include/log.h"
 
 static struct termios original_state;
 
@@ -38,11 +39,16 @@ static void enable_raw_mode(void) {
 
 // init_window : initialize a window of size height and width
 screen_t *init_screen(const int height, const int width) {
+    log_message(INFO, "Allocating Memory for screen...");
+
     enable_raw_mode();
 
     screen_t *screen = (screen_t *) malloc(sizeof(screen_t));
-    if (screen == NULL) 
+    if (screen == NULL) {
+        log_message(ERROR, "LuminANSI: Unable to allocate screen memory");
         return NULL;
+    }
+    log_message(INFO, "Memory allocation successful.");
 
     // initialize screen variables
     screen->initialization = 1;
@@ -69,6 +75,8 @@ screen_t *init_screen(const int height, const int width) {
 
 // destroy_window: free the memory contained in the window
 void destroy_screen(screen_t *screen) {
+    log_message(INFO, "Exit");
+
     if (!screen->initialization) return;
 
     // free the pixels
