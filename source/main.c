@@ -4,6 +4,7 @@
 #include "../include/screen.h"
 #include "../include/opt.h"
 #include "../include/graphics.h"
+#include "../include/log.h"
 
 #define DEBUG
 #ifdef DEBUG

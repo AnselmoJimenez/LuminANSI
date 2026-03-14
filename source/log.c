@@ -16,7 +16,7 @@ static FILE *log;
 int init_log(const char *filename) {
     log = fopen(filename, "w");
     if (log == NULL) {
-        printf("Unable to initialize logging system", filename);
+        printf("Unable to initialize logging system");
         return 0;
     }
     return 1;
